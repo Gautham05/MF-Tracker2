@@ -12,12 +12,12 @@ export default function App() {
   const currentPage = useAppStore(s => s.currentPage);
   const fetchNAV = useAppStore(s => s.fetchNAV);
 
-  // Auto-fetch NAV after import reload (flag set by import handler)
+  // After import reload: auto-fetch NAV so charts load immediately
+  // fetchNAV does ONE set() at end — no mid-loop state updates = no flicker
   React.useEffect(()=>{
-    if(localStorage.getItem('mft_auto_nav')==='1'){
+    if (localStorage.getItem('mft_auto_nav') === '1') {
       localStorage.removeItem('mft_auto_nav');
-      // Small delay so React finishes first render before fetching
-      setTimeout(()=>fetchNAV(), 300);
+      fetchNAV();
     }
   },[]);
   function renderPage() {

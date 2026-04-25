@@ -22,7 +22,6 @@ const drawLinePlugin={
 };
 
 export default function ComparisonChart({ db }) {
-  const navVersion = useAppStore(s => s.navVersion);
   const chartRef=useRef(null);
   const chartInst=useRef(null);
   const [tf,setTf]=useState('1Y');
@@ -37,7 +36,7 @@ export default function ComparisonChart({ db }) {
       Object.keys(next).forEach(k=>{if(!MF_FUNDS[k])delete next[k];});
       return next;
     });
-  },[db,navVersion]);
+  },[db]);
 
   useEffect(()=>{
     if(typeof window.Chart==='undefined')return;
@@ -96,7 +95,9 @@ export default function ComparisonChart({ db }) {
     if(!chartRef.current)return;
 
     // Exact HTML: animation:{duration:900,easing:'easeInOutCubic'} — NOT LTR plugin
-    chartInst.current=new window.Chart(chartRef.current.getContext('2d'),{
+    if(!chartRef.current)return;
+    const ctx2d=chartRef.current?.getContext('2d');if(!ctx2d)return;
+    chartInst.current=new window.Chart(ctx2d,{
       type:'line',
       data:{labels:displayLabels,datasets:chartDatasets},
       options:{
@@ -124,7 +125,7 @@ export default function ComparisonChart({ db }) {
       },
       plugins:[drawLinePlugin]
     });
-  },[db,tf,selected,navVersion]);
+  },[db,tf,selected]);
 
   const allKeys=Object.keys(MF_FUNDS);
 

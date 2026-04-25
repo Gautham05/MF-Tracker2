@@ -20,9 +20,8 @@ const drawLTRPlugin={
   },
   afterDraw(chart){if(!chart._ltrDone)chart.ctx.restore();}
 };
+
 export default function XIRRChart({ db, page, onPageChange }) {
-  const navVersion = useAppStore(s => s.navVersion);
-  const lastNavVersionRef = React.useRef(null);
   const chartRef=useRef(null);const chartInst=useRef(null);
   useEffect(()=>{
     if(typeof window.Chart==='undefined')return;
@@ -40,18 +39,10 @@ export default function XIRRChart({ db, page, onPageChange }) {
         else{ctx.textBaseline='top';ctx.fillText(v+'%',bar.x,bar.y+3);}
       },[drawLTRPlugin]);ctx.restore();
     }};
-    if(lastNavVersionRef.current !== null && chartInst.current){
-      chartInst.current.data.labels = slice;
-      chartInst.current.data.datasets[0].data = xirrVals;
-      chartInst.current.data.datasets[0].backgroundColor = xirrVals.map(v=>v>=0?'#34d399':'#f87171');
-      chartInst.current.update('none');
-      lastNavVersionRef.current = navVersion;
-      return;
-    }
-    lastNavVersionRef.current = navVersion;
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
     if(!chartRef.current)return;
-    chartInst.current=new window.Chart(chartRef.current.getContext('2d'),{
+    const ctx2d=chartRef.current?.getContext('2d');if(!ctx2d)return;
+    chartInst.current=new window.Chart(ctx2d,{
       type:'bar',data:{labels:slice,datasets:[{label:'XIRR %',data:xv,backgroundColor:xv.map(v=>v>=0?'#34d399':'#f87171'),borderRadius:5,barPercentage:0.5,categoryPercentage:0.6}]},
       options:{responsive:true,maintainAspectRatio:false,animation:{duration:0},layout:{padding:{top:24,bottom:18}},
         plugins:{legend:{display:false}},
@@ -60,7 +51,7 @@ export default function XIRRChart({ db, page, onPageChange }) {
       },plugins:[xirrValPlugin]
     });
     return()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}};
-  },[db,page,navVersion]);
+  },[db,page]);
   const keys=Object.keys(MF_FUNDS);const pages=Math.max(1,Math.ceil(keys.length/PER_PAGE));
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>

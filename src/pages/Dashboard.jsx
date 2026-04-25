@@ -31,14 +31,19 @@ export default function Dashboard() {
   const keys=Object.keys(MF_FUNDS);
 
   // Pre-load nav history for all funds from db (localStorage) — instant, no network
-  // Exact HTML: for(const k of keys){if(!navHistoryCache[k])await loadNavHistory(k);}
+  // Pre-load all nav histories then trigger ONE re-render for charts
+  const [histLoaded, setHistLoaded] = useState(0);
   useEffect(()=>{
     let cancelled=false;
     async function preload(){
+      let loaded=0;
       for(const k of keys){
         if(cancelled)break;
         await loadNavHistory(k);
+        loaded++;
       }
+      // ONE state update after ALL funds loaded = ONE chart rebuild (no per-fund flicker)
+      if(!cancelled && loaded>0) setHistLoaded(v=>v+1);
     }
     preload();
     return ()=>{cancelled=true;};
@@ -116,7 +121,7 @@ export default function Dashboard() {
 
       {/* ROW 3: PORTFOLIO VALUE CHART */}
       {keys.length>0&&(
-        <PortfolioValueChart canvasId="dash-pvc" keys={keys} db={db} amtHidden={amtHidden} key="dash-pvc"/>
+        <PortfolioValueChart canvasId="dash-pvc" keys={keys} db={db} amtHidden={amtHidden} histLoaded={histLoaded} key="dash-pvc"/>
       )}
 
       {/* ROW 4: FUND OVERVIEW CARDS */}

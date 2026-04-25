@@ -20,10 +20,8 @@ const drawLTRPlugin={
   },
   afterDraw(chart){if(!chart._ltrDone)chart.ctx.restore();}
 };
+
 export default function AllocationChart({ db, amtHidden }) {
-  const navVersion = useAppStore(s => s.navVersion);
-  const lastAmtHiddenRef = React.useRef(amtHidden);
-  const lastNavVersionRef = React.useRef(navVersion);
   const chartRef = useRef(null);
   const chartInst = useRef(null);
 
@@ -92,25 +90,15 @@ export default function AllocationChart({ db, amtHidden }) {
       }
     };
 
-    // If only navVersion changed (not amtHidden) → update data in-place, no flash
-    const amtHiddenChanged = lastAmtHiddenRef.current !== amtHidden;
-    lastAmtHiddenRef.current = amtHidden;
-    lastNavVersionRef.current = navVersion;
-    if(!amtHiddenChanged && chartInst.current){
-      chartInst.current.data.datasets[0].data = pieData;
-      chartInst.current.data.datasets[0].backgroundColor = pieColors;
-      chartInst.current.data.labels = pieLabels;
-      chartInst.current.update('none');
-      return;
-    }
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
     if(!chartRef.current)return;
     const isMob=window.innerWidth<=768;
-    chartInst.current=new window.Chart(chartRef.current.getContext('2d'),{
+    if(!chartRef.current)return;
+    const ctx2d=chartRef.current?.getContext('2d');if(!ctx2d)return;
+    chartInst.current=new window.Chart(ctx2d,{
       type:'pie',
       data:{labels:pieLabels,datasets:[{data:pieData,backgroundColor:pieColors,borderWidth:2,borderColor:'#1a2235'}]},
       options:{responsive:true,maintainAspectRatio:false,
-        animation:{duration:0},
         layout:{padding:isMob?{top:30,bottom:30,left:80,right:80}:{top:40,bottom:40,left:100,right:100}},
         plugins:{legend:{display:false},tooltip:{enabled:true,callbacks:{label:function(ctx){
           const lbl=ctx.label||'',val=ctx.parsed||0,pct=(val/pieTotal*100).toFixed(1);
@@ -120,7 +108,7 @@ export default function AllocationChart({ db, amtHidden }) {
       },plugins:[outsideLabelPlugin]
     });
     return ()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}};
-  },[db,amtHidden,navVersion]);
+  },[db,amtHidden]);
 
   return <canvas ref={chartRef}/>;
 }

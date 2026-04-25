@@ -89,10 +89,9 @@ export default function Sidebar() {
           '✓ Data imported successfully!\n\n' +
           fundCount + ' fund' + (fundCount!==1?'s':'') + ' and ' +
           txCount + ' transaction' + (txCount!==1?'s':'') + ' restored.\n\n' +
-          'The page will reload and charts will load automatically.',
+          'The page will reload — then click Refresh NAV to load chart data.',
           {variant:'alert', confirmLabel:'Reload Now'}
         ).then(()=>{
-          // Flag: auto-fetch NAV after reload so charts load without manual click
           localStorage.setItem('mft_auto_nav', '1');
           window.location.reload();
         });

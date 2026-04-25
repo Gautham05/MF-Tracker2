@@ -23,8 +23,7 @@ const drawLinePlugin={
   afterDraw(chart){if(!chart._ltrDone)chart.ctx.restore();}
 };
 
-export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M', amtHidden, isFundPage=false }) {
-  const navVersion = useAppStore(s => s.navVersion);
+export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M', amtHidden, isFundPage=false, histLoaded=0 }) {
   const chartRef=useRef(null);
   const chartInst=useRef(null);
   const hilowRef=useRef(null);
@@ -41,8 +40,6 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
   const dbRef=useRef(db);
   useEffect(()=>{keysRef.current=keys;},[keys]);
   useEffect(()=>{dbRef.current=db;},[db]);
-  // Track last built TF — nav refresh (same TF) updates data in-place, no flicker
-  const lastBuiltTfRef=useRef(null);
 
   // Full chart rebuild with LTR animation — uses refs, no closure deps
   const buildChart=useCallback((activeTf)=>{
@@ -113,39 +110,12 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
       if(hoverRef.current)hoverRef.current.innerHTML=buildHoverHTML(null);
     }
 
-    // If TF hasn't changed and chart exists → update data in-place (no flicker, no animation)
-    // Only fully recreate (with LTR animation) when TF actually changes
-    const tfChanged = lastBuiltTfRef.current !== activeTf;
-    lastBuiltTfRef.current = activeTf;
-
-    if(!tfChanged && chartInst.current){
-      // Silent in-place update — exact HTML behavior: no visual rebuild during NAV refresh
-      chartInst.current.data.datasets[0].data = curLine;
-      chartInst.current.data.datasets[1].data = invLine;
-      chartInst.current.update('none');
-      showStatic();
-      // Update hi/low
-      if(curLine.length&&hilowRef.current){
-        const returns=curLine.map((v,i)=>v>0?v-(investedUpTo[i]||0):null).filter(v=>v!==null);
-        if(returns.length){
-          const hi=Math.max(...returns),lo=Math.min(...returns);
-          const hiS=hi>=0?'+':'-',loS=lo>=0?'+':'-';
-          const hiC=hi>=0?'#34d399':'#f87171',loC=lo>=0?'#34d399':'#f87171';
-          hilowRef.current.innerHTML=
-            '<span style="color:#6b7a9a">'+activeTf+' returns — High: </span>'
-            +'<span style="color:'+hiC+';font-weight:600">'+hiS+'₹'+fIN(Math.abs(hi))+'</span>'
-            +'&nbsp;&nbsp;<span style="color:#6b7a9a">Low: </span>'
-            +'<span style="color:'+loC+';font-weight:600">'+loS+'₹'+fIN(Math.abs(lo))+'</span>';
-        }
-      }
-      return;
-    }
-
-    // TF changed → full destroy + recreate with LTR animation
+    // Full rebuild with LTR animation — exact HTML renderContent behavior
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
     const ctx=chartRef.current;if(!ctx)return;
 
-    chartInst.current=new window.Chart(ctx.getContext('2d'),{
+    const ctx2d=ctx?.getContext('2d');if(!ctx2d)return;
+    chartInst.current=new window.Chart(ctx2d,{
       type:'line',
       data:{labels:filteredDates,datasets:[
         {label:'Current',data:curLine,borderColor:'#7c83f5',backgroundColor:'rgba(124,131,245,0.07)',borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:0.3,fill:false,order:1},
@@ -193,7 +163,8 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
   },[]);
 
   // Rebuild when tf changes OR navVersion changes (NAV refresh completed)
-  useEffect(()=>{buildChart(tf);},[tf,navVersion,buildChart]);
+  // Rebuild when tf changes OR when db changes (NAV refresh completed)
+  useEffect(()=>{buildChart(tf);},[tf,db,histLoaded,buildChart]);
   useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[]);
 
   if(isFundPage){

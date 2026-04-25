@@ -5,12 +5,9 @@ import { MF_FUNDS, navHistoryCache, fundMetaCache, syncFundsFromDB, normalizeFun
 const useAppStore = create((set, get) => ({
   db: loadDB(),
   currentPage: 'Dashboard',
-  navStatus: 'NAV not loaded',
-  navLoading: false,
   sidebarOpen: false,
   amtHidden: false,
   tick: 0,
-  navVersion: 0, // increments once when full NAV refresh completes
 
   saveAndRefresh(updaterOrDb) {
     const newDb = typeof updaterOrDb === 'function' ? updaterOrDb({...get().db}) : updaterOrDb;
@@ -35,7 +32,12 @@ const useAppStore = create((set, get) => ({
   async fetchNAV() {
     const keys = Object.keys(MF_FUNDS);
     if (!keys.length) return;
-    set({ navLoading: true, navStatus: 'Fetching...' });
+    // Exact HTML: update DOM directly — no React re-renders during fetch
+    const btnEl = document.getElementById('nav-btn');
+    const statusEl = document.getElementById('nav-status');
+    if (btnEl) btnEl.textContent = '⌛ Loading...';
+    if (btnEl) btnEl.disabled = true;
+    if (statusEl) statusEl.textContent = 'Fetching...';
     const db = get().db;
     const newDb = { ...db, navData: { ...db.navData }, navHistory: { ...(db.navHistory||{}) } };
     let loaded = 0;
@@ -56,7 +58,9 @@ const useAppStore = create((set, get) => ({
             if (newDb.customFunds) newDb.customFunds.forEach(f => { if(f.key===key) f.data.category=cat; });
           }
           loaded++;
-          // NO state update during loop — zero re-renders until all done
+          // Update status text directly on DOM — no React re-render (exact HTML approach)
+          const statusEl = document.getElementById('nav-status');
+          if (statusEl) statusEl.textContent = `Funds ${loaded}/${keys.length}...`;
         }
       } catch(e) {}
     }
@@ -64,7 +68,13 @@ const useAppStore = create((set, get) => ({
     newDb.navDate = new Date().toLocaleDateString('en-IN');
     saveDB(newDb);
     const lastDate = Object.values(newDb.navData)[0]?.date || '';
-    set({ db: newDb, navStatus: lastDate ? `NAV: ${lastDate}` : 'Loaded', navLoading: false, tick: get().tick+1, navVersion: get().navVersion+1 });
+    // ONE React state update — only db changes, no navStatus/navLoading = no extra re-renders
+    set({ db: newDb, tick: get().tick+1 });
+    // Update DOM directly for final status (exact HTML)
+    const btnElF = document.getElementById('nav-btn');
+    const statusElF = document.getElementById('nav-status');
+    if (btnElF) { btnElF.textContent = '↻ Refresh NAV'; btnElF.disabled = false; }
+    if (statusElF) statusElF.textContent = lastDate ? `NAV: ${lastDate}` : 'Loaded';
   },
 
   async loadNavHistory(key) {
@@ -82,9 +92,13 @@ const useAppStore = create((set, get) => ({
       const j = await r.json();
       if (j.data && j.data.length) {
         navHistoryCache[key] = parseMFData(j.data);
-        const newDb = { ...db, navHistory: { ...(db.navHistory||{}), [key]: navHistoryCache[key].map(d=>({dateStr:d.dateStr,nav:d.nav})) } };
-        saveDB(newDb);
-        set({ db: newDb });
+        // Save to localStorage directly — NO set() call = zero React re-renders
+        // Charts read navHistoryCache directly, not from db.navHistory
+        const currentDb = get().db;
+        const updatedDb = { ...currentDb, navHistory: { ...(currentDb.navHistory||{}), [key]: navHistoryCache[key].map(d=>({dateStr:d.dateStr,nav:d.nav})) } };
+        saveDB(updatedDb);
+        // Update db ref silently so future loadDB() calls have the history
+        // but do NOT call set() - no re-render
         return navHistoryCache[key];
       }
     } catch(e) {}

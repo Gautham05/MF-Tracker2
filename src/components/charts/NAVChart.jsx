@@ -22,7 +22,6 @@ const drawLinePlugin={
 };
 
 export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
-  const navVersion = useAppStore(s => s.navVersion);
   const chartRef=useRef(null);
   const chartInst=useRef(null);
   const hoverRef=useRef(null);
@@ -108,7 +107,8 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
     const ctx=chartRef.current;if(!ctx)return;
 
-    chartInst.current=new window.Chart(ctx.getContext('2d'),{
+    const ctx2d=ctx?.getContext('2d');if(!ctx2d)return;
+    chartInst.current=new window.Chart(ctx2d,{
       type:'line',
       data:{labels:finalLabels,datasets:[
         // NAV line — PVC-style: hover anywhere shows tooltip
@@ -202,7 +202,8 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
     }
   },[fundKey,tf,amtHidden]);
 
-  useEffect(()=>{build();},[build,navVersion]);
+  // Rebuild when build fn changes OR when db changes (NAV refresh)
+  useEffect(()=>{build();},[build,db]);
   useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[]);
 
   return(
