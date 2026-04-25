@@ -1,0 +1,24 @@
+{
+  "name": "mf-tracker",
+  "private": true,
+  "version": "2.1.0",
+  "type": "module",
+  "homepage": "https://gautham05.github.io/MF-Tracker",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "gh-pages": "^6.3.0",
+    "vite": "^5.4.2"
+  }
+}
