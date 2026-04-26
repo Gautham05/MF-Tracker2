@@ -134,7 +134,6 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 
 .expense-badge-ha{display:none !important;}
 .nav-badge-ha{display:none !important;}
-
 @media(max-width:768px){
   html,body{overflow:auto;height:auto;}
   #app{height:auto;min-height:100vh;}
@@ -204,18 +203,13 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   .expense-badge-inline{display:flex !important;}
   .expense-badge-ha{display:none !important;}
   .nav-badge-ha{display:none !important;}
+  .ha{display:none !important;}
   [id^="nav-low-"],[id^="nav-high-"]{font-size:9px !important;}
   .nav-chart-footer{flex-wrap:nowrap !important;font-size:9.5px !important;gap:6px !important;}
   .nav-chart-footer span{white-space:nowrap;}
   .pvc-footer-mobile{flex-wrap:wrap !important;gap:4px !important;}
   .pvc-footer-mobile .pvc-hilow-span{margin-left:0 !important;width:100%;text-align:right;font-size:9px !important;}
   [id^="nav-tx-hover-"]{min-height:36px !important;overflow:visible !important;line-height:1.6 !important;padding-top:4px !important;font-size:11px !important;}
-  /* Insights mobile */
-  .ins-cal-grid{grid-template-columns:repeat(7,1fr) !important;gap:2px !important;}
-  .ins-cal-cell{min-height:36px !important;padding:2px 2px !important;}
-  .ins-cal-cell-amt{display:none !important;}
-  .ins-cal-cell-pct{font-size:10px !important;}
-  .ins-monthly-quarterly{grid-template-columns:1fr !important;gap:10px !important;}
-  .ins-comp-legend span.comp-full-name{display:none !important;}
-  .ins-comp-legend span.comp-short-name{display:inline !important;}
+  /* Hide Insights page completely on mobile */
+  .insights-page{display:none !important;}
 }

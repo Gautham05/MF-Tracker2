@@ -26,7 +26,7 @@ export default function Insights() {
   const startYr=firstDate?firstDate.getFullYear():now.getFullYear();
 
   if(!keys.length) return(
-    <div><div className="ph"><div className="pt">✦ Insights</div></div>
+    <div className="insights-page"><div className="ph"><div className="pt">✦ Insights</div></div>
       <div style={{color:'#6b7a9a',padding:40,textAlign:'center'}}>Add funds and transactions to see insights.</div>
     </div>
   );
@@ -201,7 +201,7 @@ export default function Insights() {
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   return(
-    <div>
+    <div className="insights-page">
       <div className="ph"><div className="pt">✦ Insights</div></div>
 
       {/* ROW 1: Day Calendar (full width) */}
