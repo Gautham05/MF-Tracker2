@@ -141,8 +141,11 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
                 const n=items.find(i=>i.datasetIndex===0);return n?n.label:'';
               },
               label:(item)=>{
-                if(item.datasetIndex===0)return'NAV: ₹'+parseFloat(item.raw).toFixed(4);
-                return null;// tx dots handled in onHover info div
+                if(item.datasetIndex===0)return'NAV: ₹'+parseFloat(item.raw).toFixed(2);
+                // For tx dot: show NAV at that date (exact HTML line 1763-1764)
+                const pt=dots[item.dataIndex];
+                if(pt&&pt._nav!=null)return'NAV: ₹'+parseFloat(pt._nav).toFixed(2);
+                return null;
               },
               filter:(item)=>item.datasetIndex===0
             }
