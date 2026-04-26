@@ -100,10 +100,12 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
       const dt=fmtDate(dateStr||filteredDates[filteredDates.length-1]);
       const rv=sign+hide('₹'+fIN(Math.abs(periodRet)))+' ('+sign+Math.abs(periodPct).toFixed(2)+'%)';
       const at='Added in '+activeTf+': '+hide('₹'+fIN(latestAdded));
-      return '<span style="color:#c0ccdc;font-size:13px;font-weight:500;min-width:90px;display:inline-block">'+dt+'</span>'
+      const isMob=window.innerWidth<=768;
+      return '<span style="color:#c0ccdc;font-size:13px;font-weight:500;'+(isMob?'':'min-width:90px;display:inline-block;')+'">'+dt+'</span>'
         +'&nbsp;&nbsp;<span style="color:#c0ccdc;font-size:13px;font-weight:500">'+activeTf+' return</span>'
-        +'&nbsp;&nbsp;<span style="color:'+rc+';font-size:13px;font-weight:700;min-width:120px;display:inline-block">'+rv+'</span>'
-        +'&nbsp;&nbsp;<span style="color:#c0ccdc;font-size:13px;font-weight:500">'+at+'</span>';
+        +'&nbsp;&nbsp;<span style="color:'+rc+';font-size:13px;font-weight:700;'+(isMob?'':'min-width:120px;display:inline-block;')+'">'+rv+'</span>'
+        +(isMob?'<br>':'&nbsp;&nbsp;')
+        +'<span style="color:#c0ccdc;font-size:13px;font-weight:500">'+at+'</span>';
     }
 
     function showStatic(){
@@ -158,7 +160,16 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
           +'<span style="color:'+hiC+';font-weight:600">'+hiS+'₹'+fIN(Math.abs(hi))+'</span>'
           +'&nbsp;&nbsp;<span style="color:#6b7a9a">Low: </span>'
           +'<span style="color:'+loC+';font-weight:600">'+loS+'₹'+fIN(Math.abs(lo))+'</span>';
-          if(hilowMobileRef.current)hilowMobileRef.current.innerHTML=hilowRef.current.innerHTML;
+          // Mobile footer: colored line indicators left, hilow right (exact HTML)
+          if(hilowMobileRef.current)hilowMobileRef.current.innerHTML=
+            '<span style="display:inline-flex;align-items:center;gap:6px;color:#9aaac8;">'
+            +'<span style="display:inline-block;width:14px;height:2.5px;background:#7c83f5;border-radius:2px;"></span>Val'
+            +'&nbsp;<span style="display:inline-block;width:14px;height:2px;background:#aabbcc;border-radius:2px;"></span>Inv'
+            +'</span>'
+            +'<span style="margin-left:auto;white-space:nowrap;color:#6b7a9a;">'
+            +activeTf+' returns — High: <span style="color:'+hiC+'">'+hiS+'₹'+fIN(Math.abs(hi))+'</span>'
+            +'&nbsp;Low: <span style="color:'+loC+'">'+loS+'₹'+fIN(Math.abs(lo))+'</span>'
+            +'</span>';
       }
     }
   // eslint-disable-next-line
@@ -201,11 +212,7 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
           {TFS.map(t=><button key={t} className={"tf-btn"+(tf===t?' tf-active':'')} onClick={()=>{setTf(t);userChangedTFRef.current=true;}}>{t}</button>)}
         </div>
         {/* Mobile footer: hilow below labels */}
-        <div className="pvc-footer-mobile" style={{display:'none'}}>
-          <span style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Portfolio Value</span>
-          <span style={{whiteSpace:'nowrap',marginLeft:8}}><span className="pvc-line-inv" style={{marginRight:4}}/> Invested</span>
-          <span ref={hilowMobileRef} className="pvc-hilow-span" style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
-        </div>
+        <div ref={hilowMobileRef} className="pvc-footer-mobile" style={{display:'none'}}/>
         {/* PC footer: all on one line */}
         <div className="pvc-footer-pc" style={{marginTop:8,display:'flex',gap:10,fontSize:10.5,color:'#9aaac8',flexWrap:'nowrap',alignItems:'center',overflow:'hidden'}}>
           <span style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Portfolio Value</span>
@@ -240,17 +247,11 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
       <div className="dash-pvc-tf-bottom" style={{display:'none',justifyContent:'center',gap:3,flexWrap:'wrap',marginTop:8,marginBottom:8}}>
         {TFS.map(t=><button key={t} className={"tf-btn"+(tf===t?' tf-active':'')} onClick={()=>setTf(t)}>{t}</button>)}
       </div>
-      {/* Mobile footer */}
-      <div className="pvc-footer-mobile" style={{display:'none',marginTop:6,fontSize:9.5,color:'#9aaac8',lineHeight:1.4,flexWrap:'wrap',gap:4,alignItems:'center'}}>
-        <span style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Current</span>
-        <span style={{whiteSpace:'nowrap',marginLeft:8}}><span className="pvc-line-inv" style={{marginRight:4}}/> Invested</span>
-        <span ref={hilowMobileRef} className="pvc-hilow-span" style={{fontSize:'9px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap',width:'100%',textAlign:'right'}}/>
-      </div>
-      {/* PC footer */}
+      {/* Single footer - labels hidden on mobile via CSS, hilow stays right-aligned */}
       <div className="dash-pvc-footer" style={{marginTop:10,display:'flex',gap:14,fontSize:10.5,color:'#9aaac8',flexWrap:'nowrap',alignItems:'center',overflow:'hidden'}}>
         <span className="dash-pvc-line-labels" style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Current Portfolio Value</span>
         <span className="dash-pvc-line-labels" style={{whiteSpace:'nowrap'}}><span className="pvc-line-inv" style={{marginRight:4}}/> Total Invested</span>
-        <span ref={hilowRef} className="pvc-hilow-span" style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
+        <span ref={hilowRef} style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
       </div>
     </div>
   );
