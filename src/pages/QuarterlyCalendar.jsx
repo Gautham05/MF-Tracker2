@@ -10,6 +10,15 @@ export default function QuarterlyCalendar({ keys, db, amtHidden, compact=false }
   const curQ     = Math.floor(now.getMonth()/3)+1;
   const now2Str  = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
+  // Reactive theme detection
+  const [themeMode, setThemeMode] = React.useState(()=>localStorage.getItem('mft_theme')||'off');
+  React.useEffect(()=>{
+    const obs = new MutationObserver(()=>setThemeMode(document.documentElement.getAttribute('data-theme')||'off'));
+    obs.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    return()=>obs.disconnect();
+  },[]);
+  const isDark = themeMode === 'dark';
+
   const { quarters, qReturns, years, totalInvestedAll } = useMemo(()=>{
     // ── Collect investments grouped by YYYY-Qx (exact HTML) ──────────────────
     const quarters = {};
@@ -180,14 +189,14 @@ export default function QuarterlyCalendar({ keys, db, amtHidden, compact=false }
 
                     if(isFuture) return(
                       <td key={q} style={{padding:3,textAlign:'center'}}>
-                        <div style={{background:'#0d1117',border:'1px dashed #1e2840',borderRadius:7,height:52,boxSizing:'border-box',overflow:'hidden'}}/>
+                        <div style={{background:isDark?'#0a0a0a':'#0d1117',border:`1px dashed ${isDark?'#1e1e1e':'#1e2840'}`,borderRadius:7,height:52,boxSizing:'border-box',overflow:'hidden'}}/>
                       </td>
                     );
 
                     // Background: global best/worst (exact HTML)
                     const isGlobalBest  = qk===bestQk;
                     const isGlobalWorst = qk===worstQk;
-                    const bgColor = isGlobalBest?'#0d2a1f':isGlobalWorst?'#2a0d0d':'#162238';
+                    const bgColor = isGlobalBest?(isDark?'#0a1a0e':'#0d2a1f'):isGlobalWorst?(isDark?'#1a0a0a':'#2a0d0d'):(isDark?'#141414':'#162238');
 
                     // Border: within-year best/worst (exact HTML)
                     const isYearBest  = qk===yearBestQk;
@@ -215,19 +224,19 @@ export default function QuarterlyCalendar({ keys, db, amtHidden, compact=false }
                           {qData&&qData.invested>0 ? (
                             <>
                               <div style={{color:invAmtColor,fontSize:'10.5px',fontWeight:700,whiteSpace:'nowrap'}}>
-                                {hide('₹'+fIN(qData.invested))}{' '}
+                                {'₹'+fIN(qData.invested)}{' '}
                                 <span style={{color:invPctColor,fontSize:'9.5px',fontWeight:600}}>({(qData.invested/totalInvestedAll*100).toFixed(1)}%)</span>
                               </div>
                               {ret
-                                ? <div style={{color:retColor,fontSize:'10.5px',fontWeight:700,marginTop:2,whiteSpace:'nowrap'}}>{hide(retSign+'₹'+fIN(Math.abs(ret)))}{' '}<span style={{fontSize:'9.5px',fontWeight:500}}>({retSign}{retPct}%)</span></div>
+                                ? <div style={{color:retColor,fontSize:'10.5px',fontWeight:700,marginTop:2,whiteSpace:'nowrap'}}>{retSign+'₹'+fIN(Math.abs(ret))}{' '}<span style={{fontSize:'9.5px',fontWeight:500}}>({retSign}{retPct}%)</span></div>
                                 : <div style={{color:'#4a5570',fontSize:10,marginTop:2}}>--</div>
                               }
                             </>
                           ) : (
                             <>
-                              <div style={{color:'#4a5570',fontSize:'10.5px'}}>--</div>
+                              <div style={{color:'#6b7a9a',fontSize:'10.5px'}}>--</div>
                               {ret
-                                ? <div style={{color:retColor,fontSize:'10.5px',fontWeight:700,marginTop:2,whiteSpace:'nowrap'}}>{hide(retSign+'₹'+fIN(Math.abs(ret)))}{' '}<span style={{fontSize:'9.5px',fontWeight:500}}>({retSign}{retPct}%)</span></div>
+                                ? <div style={{color:retColor,fontSize:'10.5px',fontWeight:700,marginTop:2,whiteSpace:'nowrap'}}>{retSign+'₹'+fIN(Math.abs(ret))}{' '}<span style={{fontSize:'9.5px',fontWeight:500}}>({retSign}{retPct}%)</span></div>
                                 : null
                               }
                             </>

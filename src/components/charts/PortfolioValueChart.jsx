@@ -88,9 +88,9 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
     const periodPct=periodBase?(periodRet/periodBase*100):0;
 
     function setHeader(cur,inv){
-      setCurVal(hide('₹'+fIN(cur)));setInvVal(hide('₹'+fIN(inv)));
+      setCurVal('₹'+fIN(cur));setInvVal('₹'+fIN(inv));
       const r=cur-inv,rp=inv?(r/inv*100):0;
-      setRetTxt(hide((r>=0?'+':'-')+'₹'+fIN(Math.abs(r))+' ('+Math.abs(rp).toFixed(2)+'%)'));
+      setRetTxt((r>=0?'+':'-')+(amtHidden?'₹••••':'₹'+fIN(Math.abs(r)))+' ('+Math.abs(rp).toFixed(2)+'%)');
       setRetColor(r>=0?'#34d399':'#f87171');
     }
 
@@ -98,8 +98,8 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
       const sign=periodRet>=0?'+':'-';
       const rc=periodRet>=0?'#34d399':'#f87171';
       const dt=fmtDate(dateStr||filteredDates[filteredDates.length-1]);
-      const rv=sign+hide('₹'+fIN(Math.abs(periodRet)))+' ('+sign+Math.abs(periodPct).toFixed(2)+'%)';
-      const at='Added in '+activeTf+': '+hide('₹'+fIN(latestAdded));
+      const rv=sign+(amtHidden?'₹••••':'₹'+fIN(Math.abs(periodRet)))+' ('+sign+Math.abs(periodPct).toFixed(2)+'%)';
+      const at='Added in '+activeTf+': '+(amtHidden?'₹••••':'₹'+fIN(latestAdded));
       const isMob=window.innerWidth<=768;
       return '<span style="color:#c0ccdc;font-size:13px;font-weight:500;'+(isMob?'':'min-width:90px;display:inline-block;')+'">'+dt+'</span>'
         +'&nbsp;&nbsp;<span style="color:#c0ccdc;font-size:13px;font-weight:500">'+activeTf+' return</span>'
@@ -173,7 +173,7 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
       }
     }
   // eslint-disable-next-line
-  },[]);
+  },[amtHidden]);
 
   // Rebuild when tf changes OR navVersion changes (NAV refresh completed)
   // Rebuild when tf changes OR when db changes (NAV refresh completed)

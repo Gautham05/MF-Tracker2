@@ -23,6 +23,7 @@ const drawLTRPlugin={
 };
 
 export default function ReturnsChart({ db, page, onPageChange }) {
+  const amtHidden = useAppStore(s => s.amtHidden);
   const chartRef=useRef(null);const chartInst=useRef(null);
   useEffect(()=>{
     if(typeof window.Chart==='undefined')return;
@@ -39,7 +40,7 @@ export default function ReturnsChart({ db, page, onPageChange }) {
         ctx.textAlign='center';ctx.fillStyle=col;ctx.font='bold 11px Segoe UI,system-ui,sans-serif';
         if(isPos){ctx.textBaseline='bottom';ctx.fillText('+'+v+'%',bar.x,bar.y-3);}else{ctx.textBaseline='top';ctx.fillText(v+'%',bar.x,Math.min(bar.y+3,scales.x.top-20));}
         ctx.textBaseline='top';ctx.font='bold 11px Segoe UI,system-ui,sans-serif';
-        ctx.fillText('('+amtSign+'₹'+fIN(Math.abs(Math.round(amt)))+')',bar.x,scales.x.bottom+4);
+        ctx.fillText('('+(window._amtHidden?'••••':amtSign+'₹'+fIN(Math.abs(Math.round(amt))))+')',bar.x,scales.x.bottom+4);
       });ctx.restore();
     }};
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
@@ -54,7 +55,7 @@ export default function ReturnsChart({ db, page, onPageChange }) {
       },plugins:[retValPlugin]
     });
     return()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}};
-  },[db,page]);
+  },[db,page,amtHidden]);
   const keys=Object.keys(MF_FUNDS);const pages=Math.max(1,Math.ceil(keys.length/PER_PAGE));
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>

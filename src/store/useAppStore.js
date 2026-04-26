@@ -29,7 +29,11 @@ const useAppStore = create((set, get) => ({
   },
   toggleSidebar() { set(s => ({ sidebarOpen: !s.sidebarOpen })); },
   closeSidebar() { set({ sidebarOpen: false }); },
-  toggleAmtHidden() { set(s => ({ amtHidden: !s.amtHidden })); },
+  toggleAmtHidden() {
+    const newVal = !get().amtHidden;
+    window._amtHidden = newVal; // sync global for chart canvas text
+    set({ amtHidden: newVal });
+  },
 
   async fetchNAV() {
     const keys = Object.keys(MF_FUNDS);
@@ -37,7 +41,7 @@ const useAppStore = create((set, get) => ({
     // Exact HTML: update DOM directly — no React re-renders during fetch
     const btnEl = document.getElementById('nav-btn');
     const statusEl = document.getElementById('nav-status');
-    if (btnEl) btnEl.textContent = '⌛ Loading...';
+    if (btnEl) btnEl.textContent = '⌛';
     if (btnEl) btnEl.disabled = true;
     if (statusEl) statusEl.textContent = 'Fetching...';
     const db = get().db;
@@ -75,7 +79,7 @@ const useAppStore = create((set, get) => ({
     // Update DOM directly for final status (exact HTML)
     const btnElF = document.getElementById('nav-btn');
     const statusElF = document.getElementById('nav-status');
-    if (btnElF) { btnElF.textContent = '↻ Refresh NAV'; btnElF.disabled = false; }
+    if (btnElF) { btnElF.textContent = '↻'; btnElF.disabled = false; }
     if (statusElF) statusElF.textContent = lastDate ? `NAV: ${lastDate}` : 'Loaded';
   },
 

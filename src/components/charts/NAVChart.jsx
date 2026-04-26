@@ -207,7 +207,7 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
 
   // Rebuild when build fn changes OR when db changes (NAV refresh)
   useEffect(()=>{build();},[build,db]);
-  useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[]);
+  useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[amtHidden]);
 
   return(
     <div className="cc" style={{marginBottom:0}}>

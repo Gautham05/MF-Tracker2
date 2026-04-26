@@ -5,6 +5,13 @@ import { parseMFData, normalizeFundCategory, buildStandardFullName, MF_FUNDS } f
 const PRESET_COLORS=['#c9a84c','#4a7fcb','#22c55e','#a78bfa','#f97316','#ef4444','#06b6d4','#ec4899','#84cc16','#f59e0b'];
 
 export default function AddFundModal({ onClose, onBack }) {
+  const [themeMode, setThemeMode] = React.useState(()=>localStorage.getItem('mft_theme')||'off');
+  React.useEffect(()=>{
+    const obs = new MutationObserver(()=>setThemeMode(document.documentElement.getAttribute('data-theme')||'off'));
+    obs.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    return()=>obs.disconnect();
+  },[]);
+  const isDark = themeMode === 'dark';
   const { addFund } = useAppStore();
 
   // State
@@ -20,7 +27,7 @@ export default function AddFundModal({ onClose, onBack }) {
   const [ter,setTer]=useState('');
   const [color,setColor]=useState(null); // auto-selected on open
   const [customColor,setCustomColor]=useState(null); // if user picked custom
-  const [customLabelBg,setCustomLabelBg]=useState('#1a2235'); // + label background
+  const [customLabelBg,setCustomLabelBg]=useState(isDark?'#111':'#1a2235'); // + label background
   const [customLabelBorder,setCustomLabelBorder]=useState('#3a4560'); // + label border
   const [btnEnabled,setBtnEnabled]=useState(false);
   const [adding,setAdding]=useState(false);
@@ -168,7 +175,7 @@ export default function AddFundModal({ onClose, onBack }) {
               {results.map((f,i)=>(
                 <div key={i} onClick={()=>selectFund(f)}
                   style={{padding:'9px 12px',cursor:'pointer',borderBottom:'1px solid #1e2840',fontSize:12,color:'#d0d8f0',transition:'background 0.1s'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#1e2840'}
+                  onMouseEnter={e=>e.currentTarget.style.background=isDark?'#1a1a1a':'#1e2840'}
                   onMouseLeave={e=>e.currentTarget.style.background='none'}>
                   <div style={{fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.schemeName}</div>
                   <div style={{fontSize:10,color:'#6b7a9a',marginTop:2}}>{f.fundHouse||''}{f.schemeCategory?' · '+f.schemeCategory:''}</div>
@@ -181,7 +188,7 @@ export default function AddFundModal({ onClose, onBack }) {
         {/* FIXED BOTTOM: selected info + key/ter/color + buttons — ALWAYS VISIBLE */}
         <div style={{flexShrink:0,borderTop:'1px solid #2a3348',padding:'10px 4px 4px'}}>
           {/* Selected fund info box — shown when fund selected */}
-          <div id="af-selected-info" style={{display:selected?'block':'block',background:'#162238',border:'1px solid #1e3a5f',borderRadius:8,padding:10,marginBottom:8,height:90,overflow:'hidden',boxSizing:'border-box'}}>
+          <div id="af-selected-info" style={{display:selected?'block':'block',background:isDark?'#141414':'#162238',border:`1px solid ${isDark?'#222':'#1e3a5f'}`,borderRadius:8,padding:10,marginBottom:8,height:90,overflow:'hidden',boxSizing:'border-box'}}>
             {selected
               ?<>
                 <div style={{fontSize:11,color:'#9aaac8',marginBottom:3}}>Selected Fund</div>

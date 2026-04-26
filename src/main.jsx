@@ -5,6 +5,12 @@ import './styles/globals.css';
 import { loadDB } from './store/db.js';
 import { syncFundsFromDB, navHistoryCache } from './constants/funds.js';
 
+window._amtHidden = false; // initialize global hide flag
+// Apply saved theme on startup — default is 'dark'
+const savedTheme = localStorage.getItem('mft_theme') || 'dark';
+if (savedTheme !== 'off') document.documentElement.setAttribute('data-theme', savedTheme);
+if (savedTheme === 'dark') localStorage.setItem('mft_theme', 'dark'); // ensure default saved
+
 // Load DB synchronously (localStorage - instant, no network)
 const db = loadDB();
 syncFundsFromDB(db);

@@ -8,6 +8,14 @@ import { exportPDF } from '../../services/pdfExport.js';
 import { appAlert, appConfirm } from '../ui/ConfirmDialog.jsx';
 
 export default function Sidebar() {
+  // Theme: 'dark' | 'light' | 'off' — default 'dark', persisted in localStorage
+  const [theme, setTheme] = React.useState(()=>{ const t=localStorage.getItem('mft_theme')||'dark'; return t==='light'?'dark':t; });
+  const [showSettings, setShowSettings] = React.useState(false);
+  React.useEffect(()=>{
+    if(theme==='off') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('mft_theme', theme);
+  },[theme]);
   const currentPage = useAppStore(s => s.currentPage);
   const setPage = useAppStore(s => s.setPage);
   const sidebarOpen = useAppStore(s => s.sidebarOpen);
@@ -124,19 +132,61 @@ export default function Sidebar() {
           ))}
         </div>
         <div className="sidebar-footer">
-          <button className="dl-btn" onClick={()=>setShowManage(true)} style={{color:'#c9a84c',borderColor:'#3a3010',background:'#2a2010'}}>⚙ Manage Funds</button>
-          <button className="dl-btn" onClick={()=>setShowImport(true)} style={{color:'#7ab8ff',borderColor:'#1a2f50',background:'#101d30'}}>⬆ Import Statement</button>
-          <div style={{display:'flex',gap:6}}>
-            <button className="dl-btn" onClick={handleExportJSON} style={{color:'#34d399',borderColor:'#1a3020',background:'#0d1f14',flex:1}} title="Export all data as JSON backup">⬇ Save Data</button>
-            <button className="dl-btn" onClick={handleImportJSON} style={{color:'#f97316',borderColor:'#2a1a08',background:'#1a1008',flex:1}} title="Import JSON backup">⬆ Load Data</button>
-          </div>
-          <input ref={importInputRef} type="file" accept=".json" style={{display:'none'}} onChange={handleFileSelected}/>
-          <div style={{display:'flex',gap:6}}>
-            <button className="dl-btn" onClick={()=>exportPDF(db,MF_FUNDS)} style={{color:'#7ab8ff',borderColor:'#1a2f50',background:'#101d30',flex:1}}>⬇ PDF</button>
-          </div>
+          <button className="dl-btn" onClick={()=>setShowSettings(true)}
+            style={{color:'#c9a84c',borderColor:'#c9a84c',background:'#2a2010',fontSize:12,fontWeight:700,letterSpacing:'0.3px'}}>
+            ⚙ Settings
+          </button>
           <div className="sver">mfapi.in · AMFI data · v2.1</div>
         </div>
       </div>
+      <input ref={importInputRef} type="file" accept=".json" style={{display:'none'}} onChange={handleFileSelected}/>
+      {showSettings&&(
+        <div className="mbg open" onClick={e=>{if(e.target===e.currentTarget)setShowSettings(false);}}>
+          <div className="modal" style={{width:320,padding:20}}>
+            <div className="mh" style={{marginBottom:16}}>
+              <div className="mt">⚙ Settings</div>
+              <button className="mc2" onClick={()=>setShowSettings(false)}>✕</button>
+            </div>
+            {/* Theme */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Theme</div>
+              <div style={{display:'flex',gap:4}}>
+                {[['dark','🌙 Dark'],['off','⊙ Off']].map(([t,label])=>(
+                  <button key={t} onClick={()=>setTheme(t)} style={{
+                    flex:1,padding:'7px 4px',borderRadius:7,cursor:'pointer',
+                    fontSize:11,fontWeight:700,
+                    background:theme===t?'#2a2010':'transparent',
+                    color:theme===t?'#c9a84c':'#6b7a9a',
+                    border:'1px solid '+(theme===t?'#c9a84c':'#2a3348'),
+                  }}>{label}</button>
+                ))}
+              </div>
+            </div>
+            <hr className="divider"/>
+            {/* Fund Management */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Funds</div>
+              <button className="dl-btn" onClick={()=>{setShowSettings(false);setShowManage(true);}}
+                style={{color:'#c9a84c',borderColor:'#3a3010',background:'#2a2010',marginBottom:6}}>⚙ Manage Funds</button>
+              <button className="dl-btn" onClick={()=>{setShowSettings(false);setShowImport(true);}}
+                style={{color:'#7ab8ff',borderColor:'#1a2f50',background:'#101d30'}}>⬆ Import Statement</button>
+            </div>
+            <hr className="divider"/>
+            {/* Data */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Data</div>
+              <div style={{display:'flex',gap:6,marginBottom:6}}>
+                <button className="dl-btn" onClick={()=>{setShowSettings(false);handleExportJSON();}}
+                  style={{color:'#34d399',borderColor:'#1a3020',background:'#0d1f14',flex:1}}>⬇ Save Data</button>
+                <button className="dl-btn" onClick={()=>{setShowSettings(false);handleImportJSON();}}
+                  style={{color:'#f97316',borderColor:'#2a1a08',background:'#1a1008',flex:1}}>⬆ Load Data</button>
+              </div>
+              <button className="dl-btn" onClick={()=>{setShowSettings(false);exportPDF(db,MF_FUNDS);}}
+                style={{color:'#7ab8ff',borderColor:'#1a2f50',background:'#101d30'}}>⬇ Export PDF</button>
+            </div>
+          </div>
+        </div>
+      )}
       {showManage&&<ManageFundsModal onClose={()=>setShowManage(false)} onAddNew={()=>setShowAddFund(true)}/>}
       {showAddFund&&<AddFundModal onClose={()=>setShowAddFund(false)} onBack={()=>{setShowAddFund(false);setShowManage(true);}}/>}
       {showImport&&<ImportModal onClose={()=>setShowImport(false)}/>}

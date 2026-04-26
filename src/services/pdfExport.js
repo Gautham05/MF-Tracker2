@@ -1,4 +1,5 @@
 import { getMFStats } from '../utils/mfStats.js';
+import { appAlert } from '../components/ui/ConfirmDialog.jsx';
 import { calcXIRR } from '../utils/xirr.js';
 import { fmtDate } from '../utils/formatters.js';
 
@@ -205,7 +206,7 @@ function _buildPDF(keys, db, MF_FUNDS, notoB64, notoBold) {
 
 export function exportPDF(db, MF_FUNDS) {
   const keys=Object.keys(MF_FUNDS);
-  if(!keys.length){alert('No funds to export.');return;}
+  if(!keys.length){appAlert('No funds to export.').then(()=>{});return;}
   // Try to load NotoSans for ₹ symbol (cached in localStorage)
   let cacheReg=null,cacheBold=null;
   try{cacheReg=localStorage.getItem('mft_noto_reg');cacheBold=localStorage.getItem('mft_noto_bold');}catch(e){}

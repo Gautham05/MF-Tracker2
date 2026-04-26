@@ -90,13 +90,13 @@ export default function Dashboard() {
 
       {/* ROW 1: METRICS */}
       <div className="metrics">
-        <div className="mc"><div className="mcl">Total Invested</div><div className="mcv">{hide('₹'+fIN(tInv))}</div></div>
-        <div className="mc"><div className="mcl">Current Value</div><div className="mcv">{hide('₹'+fIN(tCur))}</div></div>
-        <div className="mc"><div className="mcl">Total Return</div><div className={`mcv ${pl>=0?'up':'dn'}`}>{hide((pl>=0?'+':'-')+'₹'+fIN(Math.abs(pl))+' ('+(pl>=0?'+':'-')+Math.abs(plPct).toFixed(2)+'%)')}</div></div>
+        <div className="mc"><div className="mcl">Total Invested</div><div className="mcv">{'₹'+fIN(tInv)}</div></div>
+        <div className="mc"><div className="mcl">Current Value</div><div className="mcv">{'₹'+fIN(tCur)}</div></div>
+        <div className="mc"><div className="mcl">Total Return</div><div className={`mcv ${pl>=0?'up':'dn'}`}>{(pl>=0?'+':'-')+'₹'+(amtHidden?'••••':fIN(Math.abs(pl)))+' ('+(pl>=0?'+':'-')+Math.abs(plPct).toFixed(2)+'%)'}</div></div>
         <div className="mc"><div className="mcl">Portfolio XIRR</div><div className={`mcv ${portXIRR!=null?(portXIRR>=0?'up':'dn'):'gold'}`}>{portXIRR!=null?((portXIRR*100).toFixed(2)+'% p.a.'):'N/A'}</div></div>
         <div className="mc" style={{borderColor:portDayChg>=0?'#1e4a2a':'#4a1e1e'}}>
           <div className="mcl">Day Change <span style={{fontSize:9,color:'#7080a0'}}>{_updatedCount}/{keys.length}</span></div>
-          <div className={`mcv ${portDayChg>=0?'up':'dn'}`}>{hide((portDayChg>=0?'+':'-')+'₹'+fIN(Math.abs(portDayChg))+' ('+(_pdPct>=0?'+':'-')+Math.abs(_pdPct).toFixed(2)+'%)')}</div>
+          <div className={`mcv ${portDayChg>=0?'up':'dn'}`}>{(portDayChg>=0?'+':'-')+'₹'+(amtHidden?'••••':fIN(Math.abs(portDayChg)))+' ('+(_pdPct>=0?'+':'-')+Math.abs(_pdPct).toFixed(2)+'%)'}</div>
         </div>
         <div className="mc"><div className="mcl">Funds</div><div className="mcv">{keys.length}</div></div>
       </div>
@@ -135,21 +135,27 @@ export default function Dashboard() {
               const dc=getDayChange(k,db);
               const retColor=s.gain>=0?'#34d399':'#f87171';
               const xirrColor=kx!=null?(kx>=0?'#34d399':'#f87171'):'#6b7a9a';
-              const dcStr=!dc?'--':dc.stale?'NAV not updated':(dc.portChg>=0?'+':'-')+'₹'+fIN(Math.abs(dc.portChg))+' ('+(dc.portChg>=0?'+':'-')+Math.abs(dc.portChgPct||dc.navChgPct).toFixed(2)+'%)';
+              const dcStr=!dc?'--':dc.stale?'NAV not updated':(dc.portChg>=0?'+':'-')+'₹'+(amtHidden?'••••':fIN(Math.abs(dc.portChg)))+' ('+(dc.portChg>=0?'+':'-')+Math.abs(dc.portChgPct||dc.navChgPct).toFixed(2)+'%)';
               const dcColor=!dc?'#7080a0':dc.stale?'#4a5570':(dc.portChg>=0?'#34d399':'#f87171');
               const logo=getFundLogo(k);
               return(
                 <div key={k} className="fc" onClick={()=>setPage(k)}>
                   <div className="fcn">
-                    <div className="fca" style={{background:f.color}}>{k[0]}</div>
+                    {logo
+                      ?<div style={{width:26,height:26,borderRadius:'50%',overflow:'hidden',flexShrink:0}}>
+                         <img src={logo} style={{width:'100%',height:'100%',objectFit:'cover'}}
+                           onError={e=>{e.target.parentElement.style.background=f.color;e.target.parentElement.innerHTML=`<span style="font-size:11px;font-weight:700;color:#1a2235;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${k[0]}</span>`;}}/>
+                       </div>
+                      :<div className="fca" style={{background:f.color}}>{k[0]}</div>
+                    }
                     {k}
                   </div>
                   <div className="fcf">{f.name}</div>
-                  <div className="sr"><span>Invested</span><b>{hide('₹'+fIN(s.totalInvested))}</b></div>
-                  <div className="sr"><span>Current</span><b>{hide('₹'+fIN(s.currentValue))}</b></div>
-                  <div className="sr"><span>Return</span><b style={{color:retColor}}>{hide((s.gain>=0?'+':'')+'₹'+fIN(Math.abs(s.gain))+' ('+s.gainPct.toFixed(2)+'%)')}</b></div>
+                  <div className="sr"><span>Invested</span><b>{'₹'+fIN(s.totalInvested)}</b></div>
+                  <div className="sr"><span>Current</span><b>{'₹'+fIN(s.currentValue)}</b></div>
+                  <div className="sr"><span>Return</span><b style={{color:retColor}}>{(s.gain>=0?'+':'')+'₹'+(amtHidden?'••••':fIN(Math.abs(s.gain)))+' ('+s.gainPct.toFixed(2)+'%)'}</b></div>
                   <div className="sr"><span>XIRR</span><b style={{color:xirrColor,fontWeight:700}}>{kx!=null?((kx*100).toFixed(2)+'% p.a.'):'N/A'}</b></div>
-                  <div className="sr"><span>Day Change</span><b style={{color:dcColor}}>{hide(dcStr)}</b></div>
+                  <div className="sr"><span>Day Change</span><b style={{color:dcColor}}>{dcStr}</b></div>
                 </div>
               );
             })}
@@ -164,17 +170,17 @@ export default function Dashboard() {
           <div className="tax-grid">
             <div className="tax-card">
               <div className="tax-label"><span className="tax-badge-lt">LTCG</span> Long Term Gains (&gt;1 year) — all funds<span style={{fontSize:9,color:'#4a5570',marginLeft:6}}>12.5% tax above ₹1.25L</span></div>
-              <div className={`tax-val ${totalLTCG>0?'up-text':totalLTCG<0?'dn-text':'neutral-text'}`}>{totalLTCG>0?'+₹'+fIN(totalLTCG):totalLTCG<0?'-₹'+fIN(Math.abs(totalLTCG)):'₹0'}</div>
-              <div className="tax-sub">Invested: {hide('₹'+fIN(ltcgInv))} → Current: {hide('₹'+fIN(ltcgCur))}</div>
-              {totalLTCG>0?<div className="tax-sub">Est. tax: <b style={{color:'#f97316'}}>₹{fIN(totalLTCGTax)}</b> (12.5% tax above ₹1.25L)</div>
+              <div className={`tax-val ${totalLTCG>0?'up-text':totalLTCG<0?'dn-text':'neutral-text'}`}>{totalLTCG>0?'+₹'+(amtHidden?'••••':fIN(totalLTCG)):totalLTCG<0?'-₹'+(amtHidden?'••••':fIN(Math.abs(totalLTCG))):'₹0'}</div>
+              <div className="tax-sub">Invested: ₹{amtHidden?'••••':fIN(ltcgInv)} → Current: ₹{amtHidden?'••••':fIN(ltcgCur)}</div>
+              {totalLTCG>0?<div className="tax-sub">Est. tax: <b style={{color:'#f97316'}}>₹{amtHidden?'••••':fIN(totalLTCGTax)}</b> (12.5% tax above ₹1.25L)</div>
                 :totalLTCG<0?<div className="tax-sub" style={{color:'#f87171'}}>Unrealised loss — no tax</div>
                 :<div className="tax-sub" style={{color:'#8899bb'}}>No tax liability</div>}
             </div>
             <div className="tax-card">
               <div className="tax-label"><span className="tax-badge-st">STCG</span> Short Term Gains (≤1 year) — all funds<span style={{fontSize:9,color:'#4a5570',marginLeft:6}}>20% tax flat</span></div>
-              <div className={`tax-val ${totalSTCG>0?'up-text':totalSTCG<0?'dn-text':'neutral-text'}`}>{totalSTCG>0?'+₹'+fIN(totalSTCG):totalSTCG<0?'-₹'+fIN(Math.abs(totalSTCG)):'₹0'}</div>
-              <div className="tax-sub">Invested: {hide('₹'+fIN(stcgInv))} → Current: {hide('₹'+fIN(stcgCur))}</div>
-              {totalSTCG>0?<div className="tax-sub">Est. tax: <b style={{color:'#ef4444'}}>₹{fIN(totalSTCGTax)}</b> (20% tax flat)</div>
+              <div className={`tax-val ${totalSTCG>0?'up-text':totalSTCG<0?'dn-text':'neutral-text'}`}>{totalSTCG>0?'+₹'+(amtHidden?'••••':fIN(totalSTCG)):totalSTCG<0?'-₹'+(amtHidden?'••••':fIN(Math.abs(totalSTCG))):'₹0'}</div>
+              <div className="tax-sub">Invested: ₹{amtHidden?'••••':fIN(stcgInv)} → Current: ₹{amtHidden?'••••':fIN(stcgCur)}</div>
+              {totalSTCG>0?<div className="tax-sub">Est. tax: <b style={{color:'#ef4444'}}>₹{amtHidden?'••••':fIN(totalSTCGTax)}</b> (20% tax flat)</div>
                 :totalSTCG<0?<div className="tax-sub" style={{color:'#f87171'}}>Unrealised loss — no tax</div>
                 :<div className="tax-sub" style={{color:'#8899bb'}}>No tax liability</div>}
             </div>

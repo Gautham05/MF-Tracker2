@@ -22,6 +22,7 @@ const drawLTRPlugin={
 };
 
 export default function XIRRChart({ db, page, onPageChange }) {
+  const amtHidden = useAppStore(s => s.amtHidden);
   const chartRef=useRef(null);const chartInst=useRef(null);
   useEffect(()=>{
     if(typeof window.Chart==='undefined')return;
@@ -51,7 +52,7 @@ export default function XIRRChart({ db, page, onPageChange }) {
       },plugins:[xirrValPlugin]
     });
     return()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}};
-  },[db,page]);
+  },[db,page,amtHidden]);
   const keys=Object.keys(MF_FUNDS);const pages=Math.max(1,Math.ceil(keys.length/PER_PAGE));
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>

@@ -9,6 +9,15 @@ import { fIN } from '../../utils/formatters.js';
 const COLORS=['#c9a84c','#4a7fcb','#22c55e','#a78bfa','#f97316','#ef4444','#06b6d4','#ec4899','#84cc16','#f59e0b'];
 
 export default function ManageFundsModal({ onClose, onAddNew }) {
+  const [themeMode, setThemeMode] = React.useState(()=>localStorage.getItem('mft_theme')||'off');
+  React.useEffect(()=>{
+    const obs = new MutationObserver(()=>setThemeMode(document.documentElement.getAttribute('data-theme')||'off'));
+    obs.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    return()=>obs.disconnect();
+  },[]);
+  const isDark = themeMode === 'dark';
+  const amtHidden = useAppStore(s => s.amtHidden);
+  const hide = v => amtHidden ? '••••' : v;
   const { db, deleteFund, updateFund, renameFundKey } = useAppStore();
   const [editMode, setEditMode] = useState(false);
   const [terVals, setTerVals] = useState({});
@@ -56,12 +65,12 @@ export default function ManageFundsModal({ onClose, onAddNew }) {
                 const allColors=[...COLORS];
                 if(!allColors.includes(f.color)) allColors.push(f.color);
                 return(
-                  <div key={k} style={{border:'1px solid #2a3348',borderRadius:8,marginBottom:8,background:'#162238',overflow:'hidden'}}>
+                  <div key={k} style={{border:'1px solid #2a3348',borderRadius:8,marginBottom:8,background:isDark?'#141414':'#162238',overflow:'hidden'}}>
                     {/* Top row: logo + info + action btns */}
                     <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px'}}>
                       {logo
-                        ?<div id={`mf-dot-${k}`} style={{width:30,height:30,borderRadius:'50%',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden',padding:2}}>
-                           <img src={logo} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'50%'}}
+                        ?<div id={`mf-dot-${k}`} style={{width:30,height:30,borderRadius:'50%',flexShrink:0,overflow:'hidden'}}>
+                           <img src={logo} style={{width:'100%',height:'100%',objectFit:'cover'}}
                              onError={e=>{e.target.parentElement.style.background=f.color;e.target.parentElement.innerHTML=k[0];}}/>
                          </div>
                         :<div id={`mf-dot-${k}`} style={{width:30,height:30,borderRadius:'50%',background:f.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#1a2235',flexShrink:0}}>{k[0]}</div>
@@ -69,7 +78,7 @@ export default function ManageFundsModal({ onClose, onAddNew }) {
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:'12.5px',fontWeight:700,color:'#e0e8ff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.name}</div>
                         <div style={{fontSize:10,color:'#6b7a9a',marginTop:1}}>{k} · {f.category||'—'} · TER: {f.ter>0?<span style={{color:'#c9a84c',fontWeight:700}}>{f.ter}%</span>:<span style={{color:'#6b7a9a'}}>-</span>}</div>
-                        <div style={{fontSize:10,color:'#9aaac8',marginTop:1}}>{txCount} txns · ₹{fIN(s.totalInvested)}</div>
+                        <div style={{fontSize:10,color:'#9aaac8',marginTop:1}}>{txCount} txns · {'₹'+fIN(s.totalInvested)}</div>
                       </div>
                       <div style={{display:'flex',flexDirection:'column',gap:3,flexShrink:0}}>
                         <button onClick={()=>handleDelete(k)} style={{visibility:editMode?'visible':'hidden',background:'#2a1515',border:'1px solid #4a2020',color:'#f87171',width:26,height:22,borderRadius:5,cursor:'pointer',fontSize:10,padding:0,lineHeight:1}}>✕</button>
@@ -77,7 +86,7 @@ export default function ManageFundsModal({ onClose, onAddNew }) {
                       </div>
                     </div>
                     {/* Bottom row: KEY + TER% + color dots */}
-                    <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',padding:'6px 12px',borderTop:'1px solid #1e2840',background:'#111a2a'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',padding:'6px 12px',borderTop:`1px solid ${isDark?'#1e1e1e':'#1e2840'}`,background:isDark?'#0d0d0d':'#111a2a'}}>
                       <span style={{fontSize:10,color:'#8899bb',fontWeight:700}}>KEY</span>
                       <input id={`mf-key-${k}`} defaultValue={k} maxLength={8} disabled={!editMode}
                         style={{width:56,padding:'3px 5px',border:'1px solid #2a3348',borderRadius:5,background:'#0d1117',color:'#e0e4ef',fontSize:11,outline:'none',textTransform:'uppercase',opacity:editMode?1:0.45,pointerEvents:editMode?'auto':'none'}} onChange={e=>setKeyVals(v=>({...v,[k]:e.target.value.toUpperCase()}))}
@@ -92,7 +101,7 @@ export default function ManageFundsModal({ onClose, onAddNew }) {
                             style={{width:16,height:16,borderRadius:'50%',background:c,cursor:editMode?'pointer':'default',border:f.color===c?'2px solid #fff':'2px solid transparent',flexShrink:0,display:editMode||f.color===c?'inline-block':'none'}}/>
                         ))}
                         {editMode&&(
-                          <label style={{width:16,height:16,borderRadius:'50%',border:'2px solid #3a4560',background:'#1a2235',cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                          <label style={{width:16,height:16,borderRadius:'50%',border:'2px solid #3a4560',background:isDark?'#111':'#1a2235',cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
                             <input type="color" onChange={e=>handleColorChange(k,e.target.value)} style={{opacity:0,width:1,height:1,position:'absolute'}}/>
                             <span style={{fontSize:11,color:'#6b7a9a',lineHeight:1}}>+</span>
                           </label>

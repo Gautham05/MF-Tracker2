@@ -1,3 +1,113 @@
+/* ── THEME: DARK MODE ── */
+[data-theme="dark"] {
+  --bg-page:      #0a0a0a;
+  --bg-surface:   #111111;
+  --bg-surface2:  #161616;
+  --bg-input:     #0a0a0a;
+  --border:       #222222;
+  --border2:      #2a2a2a;
+  --text-primary: #e8e8e8;
+  --text-secondary:#888888;
+  --text-muted:   #555555;
+  --text-heading: #ffffff;
+  --gold:         #c9a84c;
+  --gold-btn-text:#0a0a0a;
+  --gold-hover:   #d4b55e;
+  --up:           #34d399;
+  --dn:           #f87171;
+  --topbar-bg:    #111111;
+  --sidebar-bg:   #111111;
+  --modal-bg:     #111111;
+  --modal-overlay:rgba(0,0,0,0.85);
+  --scrollbar:    #222222;
+}
+[data-theme="dark"] body { background: var(--bg-page) !important; color: var(--text-primary); }
+[data-theme="dark"] .topbar { background: var(--topbar-bg) !important; border-bottom-color: var(--border) !important; }
+[data-theme="dark"] .topbar-brand { color: var(--text-heading) !important; }
+[data-theme="dark"] .topbar-brand b { color: var(--gold) !important; }
+[data-theme="dark"] .topbar-brand span { color: var(--text-muted) !important; }
+[data-theme="dark"] .refresh-btn { background: var(--bg-surface2) !important; border-color: var(--border2) !important; color: var(--gold) !important; }
+[data-theme="dark"] .eye-btn { background: var(--bg-surface2) !important; border-color: var(--border2) !important; color: var(--gold) !important; }
+[data-theme="dark"] .sidebar { background: var(--sidebar-bg) !important; border-right-color: var(--border) !important; }
+[data-theme="dark"] .sidebar-footer { border-top-color: var(--border) !important; }
+[data-theme="dark"] .slabel { color: var(--gold) !important; }
+[data-theme="dark"] .nav-btn { color: var(--text-primary) !important; }
+[data-theme="dark"] .nav-btn:hover { background: var(--bg-surface2) !important; }
+[data-theme="dark"] .nav-btn.active { color: var(--gold) !important; }
+[data-theme="dark"] .nsub { color: var(--text-secondary) !important; }
+[data-theme="dark"] .dl-btn { background: var(--bg-surface2) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .dl-btn:hover { color: var(--gold) !important; border-color: var(--gold) !important; }
+[data-theme="dark"] .content::-webkit-scrollbar-thumb { background: var(--scrollbar) !important; }
+[data-theme="dark"] .pt { color: var(--text-heading) !important; }
+[data-theme="dark"] .mc { background: var(--bg-surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .mcl { color: var(--text-secondary) !important; }
+[data-theme="dark"] .mcv { color: var(--text-heading) !important; }
+[data-theme="dark"] .mcv.up { color: var(--up) !important; }
+[data-theme="dark"] .mcv.dn { color: var(--dn) !important; }
+[data-theme="dark"] .mcv.gold { color: var(--gold) !important; }
+[data-theme="dark"] .mcs { color: var(--text-secondary) !important; }
+[data-theme="dark"] .mcs.up { color: var(--up) !important; }
+[data-theme="dark"] .mcs.dn { color: var(--dn) !important; }
+[data-theme="dark"] .cc { background: var(--bg-surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .cct { color: var(--text-secondary) !important; }
+[data-theme="dark"] .pvc-wrap { background: var(--bg-surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .pvc-item-label { color: var(--text-secondary) !important; }
+[data-theme="dark"] .pvc-val { color: var(--text-heading) !important; }
+[data-theme="dark"] .tf-btn { color: var(--text-secondary) !important; }
+[data-theme="dark"] .tf-btn:hover { color: var(--text-primary) !important; }
+[data-theme="dark"] .tf-btn.tf-active { color: var(--text-heading) !important; border-color: var(--text-heading) !important; }
+[data-theme="dark"] .fc { background: var(--bg-surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .fcn { color: var(--text-heading) !important; }
+[data-theme="dark"] .fcf { color: var(--text-muted) !important; }
+[data-theme="dark"] .sr { color: var(--text-secondary) !important; }
+[data-theme="dark"] .up-text { color: var(--up) !important; }
+[data-theme="dark"] .dn-text { color: var(--dn) !important; }
+
+[data-theme="dark"] .th2 { border-bottom-color: var(--border) !important; }
+[data-theme="dark"] .tt { color: var(--text-heading) !important; }
+[data-theme="dark"] .tw { background: #111 !important; border-color: #222 !important; }
+[data-theme="dark"] .tx-table thead tr { background: var(--bg-surface2) !important; }
+[data-theme="dark"] .tx-table th { color: #8899bb !important; border-bottom-color: var(--border) !important; }
+[data-theme="dark"] .tx-table td { border-bottom-color: #1e2840 !important; }
+[data-theme="dark"] .tx-table tbody tr:hover td { background: var(--bg-surface2) !important; }
+[data-theme="dark"] .btn-gold { background: var(--gold) !important; color: var(--gold-btn-text) !important; }
+[data-theme="dark"] .btn-gold:hover { background: var(--gold-hover) !important; }
+[data-theme="dark"] .btn-dark { background: var(--bg-surface2) !important; border-color: var(--border2) !important; color: var(--text-primary) !important; }
+[data-theme="dark"] .modal { background: var(--modal-bg) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .mbg { background: var(--modal-overlay) !important; }
+[data-theme="dark"] .mt { color: var(--text-heading) !important; }
+[data-theme="dark"] .mh { border-bottom-color: var(--border) !important; }
+[data-theme="dark"] .mfooter { border-top-color: var(--border) !important; }
+[data-theme="dark"] .fg label { color: var(--text-secondary) !important; }
+[data-theme="dark"] .fg input { background: var(--bg-input) !important; border-color: var(--border) !important; color: var(--text-primary) !important; }
+[data-theme="dark"] .fg select { background: var(--bg-input) !important; border-color: var(--border) !important; color: var(--text-primary) !important; }
+[data-theme="dark"] .divider { border-top-color: var(--border) !important; }
+[data-theme="dark"] .tax-section { background: var(--bg-surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .tax-title { color: var(--text-heading) !important; }
+[data-theme="dark"] .tax-card { background: var(--bg-surface2) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .tax-val { color: var(--text-heading) !important; }
+[data-theme="dark"] .tax-label { color: var(--text-secondary) !important; }
+[data-theme="dark"] .tax-sub { color: var(--text-primary); }
+[data-theme="dark"] .nbadge { background: var(--bg-surface2) !important; border-color: var(--border) !important; color: var(--text-primary) !important; }
+[data-theme="dark"] .xna { background: var(--bg-surface2) !important; border-color: var(--border) !important; color: var(--text-secondary) !important; }
+[data-theme="dark"] .mcn { background: var(--bg-surface2) !important; color: var(--text-secondary) !important; }
+[data-theme="dark"] .msv { background: var(--gold) !important; color: var(--gold-btn-text) !important; }
+[data-theme="dark"] .sver { color: var(--text-muted) !important; }
+[data-theme="dark"] .nav-status { color: var(--text-muted) !important; }
+[data-theme="dark"] .empty-row { color: var(--text-muted) !important; }
+[data-theme="dark"] .bo { background: #162a1a !important; color: #34d399 !important; border-color: #1e4a2a !important; }
+[data-theme="dark"] .bc { background: #2a1a1a !important; color: #f87171 !important; border-color: #4a2020 !important; }
+[data-theme="dark"] .xup { background: #162a1a !important; color: #34d399 !important; border-color: #1e4a2a !important; }
+[data-theme="dark"] .xdn { background: #2a1a1a !important; color: #f87171 !important; border-color: #4a2020 !important; }
+[data-theme="dark"] .tax-badge-lt { background: #163020 !important; color: #34d399 !important; border-color: #1e5035 !important; }
+[data-theme="dark"] .tax-badge-st { background: #2a1e10 !important; color: #fb923c !important; border-color: #4a2e10 !important; }
+
+/* Quarterly calendar - override navy bg in dark mode */
+[data-theme="dark"] [style*="background:#1a2235"] { background: #141414 !important; }
+[data-theme="dark"] [style*="background:#0d2218"] { background: #0a1a0e !important; }
+[data-theme="dark"] [style*="background:#220d0d"] { background: #1a0a0a !important; }
+
+
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;background:#0d1117;font-family:'Segoe UI',system-ui,sans-serif;color:#e0e4ef;}
 #root,#app{display:flex;flex-direction:column;height:100vh;}
@@ -134,6 +244,74 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 
 .expense-badge-ha{display:none !important;}
 .nav-badge-ha{display:none !important;}
+
+/* ── THEME FIXES ── */
+
+/* 1. Manage Funds modal - fix blue background to match app theme */
+[data-theme="dark"] .modal,
+[data-theme="dark"] .mbg .modal { background: #111 !important; border-color: #222 !important; }
+
+[data-theme="dark"] .mbg { background: rgba(0,0,0,0.85) !important; }
+
+/* Manage funds fund rows */
+[data-theme="dark"] [style*="background:#131d2e"],
+[data-theme="dark"] [style*="background: #131d2e"],
+[data-theme="dark"] [style*="background:#162238"],
+[data-theme="dark"] [style*="background: #162238"] { background: #161616 !important; }
+
+/* 2. P&L colors in transactions - keep green/red in all modes */
+
+/* Stamp duty and total in transaction modal */
+
+/* 3. Insights page - day calendar boxes and Q calendar */
+[data-theme="dark"] [style*="background:#162238"] { background: #161616 !important; }
+[data-theme="dark"] [style*="background:#1a2235"] { background: #111 !important; }
+[data-theme="dark"] [style*="background:#131d2e"] { background: #161616 !important; }
+[data-theme="dark"] [style*="background:#0d1117"] { background: #0a0a0a !important; }
+[data-theme="dark"] [style*="background:#1e2840"] { background: #1a1a1a !important; }
+[data-theme="dark"] [style*="background:#2a3348"] { background: #222 !important; }
+
+/* Insight day calendar cell text */
+
+/* Q calendar cells */
+
+[data-theme="dark"] [style*="background:#162238"] { background: #181818 !important; }
+[data-theme="dark"] [style*="background:#0d2a1f"] { background: #0d1a12 !important; }
+[data-theme="dark"] [style*="background:#2a0d0d"] { background: #1a0d0d !important; }
+
+/* Border colors in insights */
+
+/* Dark mode: fix blue-ish inline bg colors */
+[data-theme="dark"] [style*="background:#1a3a20"] { background: #0d1a10 !important; }
+[data-theme="dark"] [style*="background:#3a1a1a"] { background: #1a0d0d !important; }
+[data-theme="dark"] [style*="background:#3a2a0a"] { background: #1a1500 !important; }
+[data-theme="dark"] [style*="background:#0f2040"] { background: #0a0a0a !important; }
+[data-theme="dark"] [style*="background:#2a1515"] { background: #1a0a0a !important; }
+[data-theme="dark"] [style*="background:#2a1a0a"] { background: #1a1000 !important; }
+
+/* Light mode: all inline dark backgrounds → white/light */
+
+/* Light mode border colors */
+
+/* Light mode white text → black */
+
+/* Chart tooltip light mode */
+
+/* Transaction table dark mode - only bg changes, text stays as off mode */
+
+/* Keep P&L text colors same as off mode in dark */
+[data-theme="dark"] .bo { background: #162a1a !important; color: #34d399 !important; border-color: #1e4a2a !important; }
+[data-theme="dark"] .bc { background: #2a1a1a !important; color: #f87171 !important; border-color: #4a2020 !important; }
+[data-theme="dark"] .up-text { color: #34d399 !important; }
+[data-theme="dark"] .dn-text { color: #f87171 !important; }
+
+/* Tax badges dark */
+[data-theme="dark"] .tax-badge-lt { background: #163020 !important; color: #34d399 !important; border-color: #1e5035 !important; }
+[data-theme="dark"] .tax-badge-st { background: #2a1e10 !important; color: #fb923c !important; border-color: #4a2e10 !important; }
+
+/* Tax badges light mode */
+/* Tax badges light mode */
+
 @media(max-width:768px){
   html,body{overflow:auto;height:auto;}
   #app{height:auto;min-height:100vh;}
@@ -213,4 +391,6 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   /* Hide Insights page completely on mobile */
   .insights-page{display:none !important;}
   .sidebar-insights-btn{display:none !important;}
+  /* Transaction row buttons — smaller on mobile */
+  .tx-table .btn-sm{font-size:9px !important;padding:2px 6px !important;min-width:0 !important;line-height:1.4 !important;}
 }

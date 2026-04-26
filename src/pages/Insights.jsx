@@ -8,6 +8,15 @@ import QuarterlyCalendar from './QuarterlyCalendar.jsx';
 export default function Insights() {
   const db = useAppStore(s => s.db);
   const amtHidden = useAppStore(s => s.amtHidden);
+  // Reactive theme detection - re-renders when theme changes
+  const [themeMode, setThemeMode] = React.useState(()=>localStorage.getItem('mft_theme')||'off');
+  React.useEffect(()=>{
+    const obs = new MutationObserver(()=>setThemeMode(document.documentElement.getAttribute('data-theme')||'off'));
+    obs.observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+    return ()=>obs.disconnect();
+  },[]);
+  const isDark = themeMode === 'dark';
+  const isLight = false;
   const keys = Object.keys(MF_FUNDS);
   const hide = v => amtHidden ? '••••' : v;
 
@@ -83,12 +92,18 @@ export default function Insights() {
       const chg=pl?pl.chg:null,pct=pl?pl.pct:null;
       if(chg!==null){tradingDays++;if(chg>0)profitDays++;else if(chg<0)lossDays++;}
 
-      let bg='#131c2e',border='#1e2840';
+      let bg=isLight?'#f0f2f5':isDark?'#141414':'#131c2e', border=isLight?'#dde3ed':isDark?'#1e1e1e':'#1e2840';
       if(chg!==null){
         const intensity=Math.min(Math.abs(pct)/2,1);
-        if(chg>0){const gv=Math.round(40+intensity*60);bg=`rgba(20,${gv},35,0.85)`;border='#1e5030';}
-        else if(chg<0){const rv=Math.round(50+intensity*60);bg=`rgba(${rv},15,15,0.85)`;border='#5a1e1e';}
-        else{bg='#1a2640';border='#2a3560';}
+        if(chg>0){
+          if(isLight){const gv=Math.round(180+intensity*60);bg=`rgba(20,${gv},80,0.15)`;border='#16a34a';}
+          else{const gv=Math.round(40+intensity*60);bg=`rgba(20,${gv},35,0.85)`;border='#1e5030';}
+        }
+        else if(chg<0){
+          if(isLight){const rv=Math.round(200+intensity*30);bg=`rgba(${rv},30,30,0.12)`;border='#dc2626';}
+          else{const rv=Math.round(50+intensity*60);bg=`rgba(${rv},15,15,0.85)`;border='#5a1e1e';}
+        }
+        else{bg=isLight?'#e8ecf5':isDark?'#1a1a1a':'#1a2640';border=isLight?'#c8d0e0':isDark?'#282828':'#2a3560';}
       }
 
       const hasTx=keys.some(k=>(db.mf[k]?.transactions||[]).some(t=>t.date===dateStr));
@@ -104,11 +119,11 @@ export default function Insights() {
           setCalTooltip(`${dateStr}   P&L: ${titleData}${txInfo.length?' | '+txInfo.join(' | '):''}`);
         }}
           style={{background:bg,border:`1px solid ${border}`,borderRadius:5,cursor:chg!==null?'pointer':'default',height:40,overflow:'hidden',display:'flex',flexDirection:'column',justifyContent:'space-between',position:'relative',padding:'4px 5px',boxSizing:'border-box'}}>
-          <div style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,0.4)',lineHeight:1}}>{day}</div>
+          <div style={{fontSize:12,fontWeight:700,color:isLight?'rgba(0,0,0,0.4)':'rgba(255,255,255,0.4)',lineHeight:1}}>{day}</div>
           {chg!==null&&(
             <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginTop:2}}>
               <div style={{background:'rgba(0,0,0,0.35)',borderRadius:4,padding:'2px 5px',display:'flex',gap:4,alignItems:'center'}}>
-                <span style={{fontSize:10,fontWeight:700,color:chg>=0?'#34d399':'#f87171'}}>{hide(amtStr)}</span>
+                <span style={{fontSize:10,fontWeight:700,color:chg>=0?'#34d399':'#f87171'}}>{amtStr}</span>
                 <span style={{fontSize:10,color:chg>=0?'#34d399':'#f87171'}}>{pctStr}</span>
               </div>
             </div>
@@ -209,9 +224,9 @@ export default function Insights() {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
           <div className="cct" style={{marginBottom:0}}>P&L Calendar — Daily Portfolio Change</div>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <button onClick={()=>calNav(-1)} style={{background:'#1a2235',border:'1px solid #2a3348',color:'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>‹</button>
+            <button onClick={()=>calNav(-1)} style={{background:isLight?'#fff':isDark?'#111':'#1a2235',border:`1px solid ${isLight?'#dde':'#2a3348'}`,color:isLight?'#b8921e':'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>‹</button>
             <span id="ins-cal-label" style={{fontSize:13,fontWeight:700,color:'#e0e8ff',minWidth:90,textAlign:'center'}}>{months[calMonth]} {calYear}</span>
-            <button onClick={()=>calNav(1)} style={{background:'#1a2235',border:'1px solid #2a3348',color:'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>›</button>
+            <button onClick={()=>calNav(1)} style={{background:isLight?'#fff':isDark?'#111':'#1a2235',border:`1px solid ${isLight?'#dde':'#2a3348'}`,color:isLight?'#b8921e':'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>›</button>
           </div>
         </div>
         <div id="ins-cal-body">{renderCalendar()}</div>
@@ -252,9 +267,9 @@ export default function Insights() {
                         {isBest&&<span style={{fontSize:9,background:'#1e4a2a',color:'#34d399',borderRadius:3,padding:'1px 4px',marginLeft:4}}>BEST</span>}
                         {isWorst&&<span style={{fontSize:9,background:'#4a1e1e',color:'#f87171',borderRadius:3,padding:'1px 4px',marginLeft:4}}>WORST</span>}
                       </td>
-                      <td style={{padding:'5px 8px',textAlign:'right',color:'#9aaac8'}}>{mo.invested?hide('₹'+fIN(Math.round(mo.invested))):'--'}</td>
-                      <td style={{padding:'5px 8px',textAlign:'right',color:'#f87171'}}>{mo.redeemed?hide('₹'+fIN(Math.round(mo.redeemed))):'--'}</td>
-                      <td style={{padding:'5px 8px',textAlign:'right',color:retColor}}>{mo.hasData?hide((mo.ret>=0?'+':'−')+'₹'+fIN(Math.abs(Math.round(mo.ret)))):'--'}</td>
+                      <td style={{padding:'5px 8px',textAlign:'right',color:'#9aaac8'}}>{mo.invested?'₹'+fIN(Math.round(mo.invested)):'--'}</td>
+                      <td style={{padding:'5px 8px',textAlign:'right',color:'#f87171'}}>{mo.redeemed?'₹'+fIN(Math.round(mo.redeemed)):'--'}</td>
+                      <td style={{padding:'5px 8px',textAlign:'right',color:retColor}}>{mo.hasData?(mo.ret>=0?'+':'−')+'₹'+fIN(Math.abs(Math.round(mo.ret))):'--'}</td>
                       <td style={{padding:'5px 8px',textAlign:'right',color:retColor,fontWeight:700}}>{retPct!==null?(retPct>=0?'+':'')+retPct.toFixed(2)+'%':'--'}</td>
                     </tr>
                   );

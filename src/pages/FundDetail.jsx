@@ -15,6 +15,13 @@ export default function FundDetail({ fundKey }) {
   const deleteTx = useAppStore(s => s.deleteTx);
   const loadNavHistory = useAppStore(s => s.loadNavHistory);
   const amtHidden = useAppStore(s => s.amtHidden);
+  const [themeMode, setThemeMode] = React.useState(()=>localStorage.getItem('mft_theme')||'off');
+  React.useEffect(()=>{
+    const obs = new MutationObserver(()=>setThemeMode(document.documentElement.getAttribute('data-theme')||'off'));
+    obs.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    return()=>obs.disconnect();
+  },[]);
+  const isDark = themeMode === 'dark';
   const [navTF,setNavTF]=useState('3M');
   const [editMode,setEditMode]=useState(false);
   const [txModal,setTxModal]=useState(null);
@@ -58,7 +65,7 @@ export default function FundDetail({ fundKey }) {
     const dcPct=Math.abs(dc.portChgPct||dc.navChgPct);
     dcCard=<div className="mc" style={{borderColor:dcPos?'#1e4a2a':'#4a1e1e'}}>
       <div className="mcl">Day Change</div>
-      <div className={`mcv ${dcPos?'up':'dn'}`}>{hide((dcPos?'+':'-')+'₹'+fIN(Math.abs(dc.portChg))+' ('+(dcPos?'+':'-')+dcPct.toFixed(2)+'%)')}</div>
+      <div className={`mcv ${dcPos?'up':'dn'}`}>{(dcPos?'+':'-')+'₹'+(amtHidden?'••••':fIN(Math.abs(dc.portChg)))+' ('+(dcPos?'+':'-')+dcPct.toFixed(2)+'%)'}</div>
     </div>;
   }
 
@@ -80,8 +87,8 @@ export default function FundDetail({ fundKey }) {
       <div className="ph">
         <div className="ph-fund-outer" style={{display:'flex',alignItems:'center',gap:12,flex:1,minWidth:0}}>
           {logo
-            ?<div className="fca" style={{background:'#fff',width:42,height:42,borderRadius:'50%',flexShrink:0,overflow:'hidden',padding:2}}>
-               <img src={logo} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'50%'}}
+            ?<div className="fca" style={{width:42,height:42,borderRadius:'50%',flexShrink:0,overflow:'hidden'}}>
+               <img src={logo} style={{width:'100%',height:'100%',objectFit:'cover'}}
                  onError={e=>{e.target.parentElement.style.background=fund.color;e.target.parentElement.innerHTML=fundKey[0];e.target.parentElement.style.fontSize='16px';e.target.parentElement.style.color='#1a2235';e.target.parentElement.style.fontWeight='800';e.target.parentElement.style.display='flex';e.target.parentElement.style.alignItems='center';e.target.parentElement.style.justifyContent='center';}}/>
              </div>
             :<div className="fca" style={{background:fund.color,width:42,height:42,borderRadius:'50%',fontSize:16,flexShrink:0}}>{fundKey[0]}</div>
@@ -102,14 +109,14 @@ export default function FundDetail({ fundKey }) {
 
       {/* METRICS — exact HTML order */}
       <div className="metrics">
-        <div className="mc"><div className="mcl">Total Invested</div><div className="mcv">{hide('₹'+fIN(s.totalInvested))}</div></div>
-        <div className="mc"><div className="mcl">Current Value</div><div className="mcv">{hide('₹'+fIN(s.currentValue))}</div></div>
-        <div className="mc"><div className="mcl">Total Return</div><div className={`mcv ${s.gain>=0?'up':'dn'}`}>{hide((s.gain>=0?'+':'-')+'₹'+fIN(Math.abs(s.gain))+' ('+(s.gain>=0?'+':'-')+Math.abs(s.gainPct).toFixed(2)+'%)')}</div></div>
+        <div className="mc"><div className="mcl">Total Invested</div><div className="mcv">{'₹'+fIN(s.totalInvested)}</div></div>
+        <div className="mc"><div className="mcl">Current Value</div><div className="mcv">{'₹'+fIN(s.currentValue)}</div></div>
+        <div className="mc"><div className="mcl">Total Return</div><div className={`mcv ${s.gain>=0?'up':'dn'}`}>{(s.gain>=0?'+':'-')+'₹'+(amtHidden?'••••':fIN(Math.abs(s.gain)))+' ('+(s.gain>=0?'+':'-')+Math.abs(s.gainPct).toFixed(2)+'%)'}</div></div>
         <div className="mc"><div className="mcl">XIRR</div><div className={`mcv ${kx!=null?(kx>=0?'up':'dn'):'gold'}`}>{kx!=null?((kx*100).toFixed(2)+'% p.a.'):'N/A'}</div></div>
         {dcCard}
         <div className="mc"><div className="mcl">NAV (as on date)</div><div className="mcv"><span style={{color:'#7ab8ff',fontWeight:800}}>₹{curNav?fINd(curNav):'--'}</span> <span style={{fontSize:10,fontWeight:500,color:'#8899bb'}}>({s.navDate==='--'?'--':fmtDate(s.navDate)})</span></div></div>
-        <div className="mc"><div className="mcl">Avg NAV</div><div className="mcv">{hide('₹'+fINd(s.avgNav))}</div></div>
-        <div className="mc"><div className="mcl">Total Units</div><div className="mcv">{hide(parseFloat(s.totalUnits).toFixed(3))}</div></div>
+        <div className="mc"><div className="mcl">Avg NAV</div><div className="mcv">{'₹'+fINd(s.avgNav)}</div></div>
+        <div className="mc"><div className="mcl">Total Units</div><div className="mcv">{amtHidden?'••••':parseFloat(s.totalUnits).toFixed(3)}</div></div>
       </div>
 
       {/* CHARTS: LEFT=PVC, RIGHT=NAV (exact HTML order) */}
@@ -126,17 +133,17 @@ export default function FundDetail({ fundKey }) {
         <div className="tax-grid">
           <div className="tax-card">
             <div className="tax-label"><span className="tax-badge-lt">LTCG</span> Long Term (&gt;1 yr) — {tax.ltcgUnits.toFixed(3)} units<span style={{fontSize:9,color:'#4a5570',marginLeft:6}}>12.5% tax above ₹1.25L</span></div>
-            <div className={`tax-val ${tax.ltcgGain>0?'up-text':tax.ltcgGain<0?'dn-text':'neutral-text'}`}>{tax.ltcgGain>0?'+₹'+fIN(tax.ltcgGain):tax.ltcgGain<0?'-₹'+fIN(Math.abs(tax.ltcgGain)):'₹0'}</div>
-            <div className="tax-sub">Invested: {hide('₹'+fIN(tax.ltcgInvested))} → Current: {hide('₹'+fIN(tax.ltcgCurVal))}</div>
-            {tax.ltcgGain>0?<div className="tax-sub" style={{marginTop:3}}>Est. LTCG Tax: <b style={{color:'#f97316'}}>₹{fIN(tax.ltcgTax)}</b> (12.5% tax above ₹1.25L)</div>
+            <div className={`tax-val ${tax.ltcgGain>0?'up-text':tax.ltcgGain<0?'dn-text':'neutral-text'}`}>{tax.ltcgGain>0?'+₹'+(amtHidden?'••••':fIN(tax.ltcgGain)):tax.ltcgGain<0?'-₹'+(amtHidden?'••••':fIN(Math.abs(tax.ltcgGain))):'₹0'}</div>
+            <div className="tax-sub">Invested: ₹{amtHidden?'••••':fIN(tax.ltcgInvested)} → Current: ₹{amtHidden?'••••':fIN(tax.ltcgCurVal)}</div>
+            {tax.ltcgGain>0?<div className="tax-sub" style={{marginTop:3}}>Est. LTCG Tax: <b style={{color:'#f97316'}}>₹{amtHidden?'••••':fIN(tax.ltcgTax)}</b> (12.5% tax above ₹1.25L)</div>
               :tax.ltcgGain<0?<div className="tax-sub" style={{marginTop:3,color:'#f87171'}}>Unrealised loss — no tax</div>
               :<div className="tax-sub" style={{marginTop:3,color:'#7080a0'}}>No tax liability</div>}
           </div>
           <div className="tax-card">
             <div className="tax-label"><span className="tax-badge-st">STCG</span> Short Term (≤1 yr) — {tax.stcgUnits.toFixed(3)} units<span style={{fontSize:9,color:'#4a5570',marginLeft:6}}>20% tax flat</span></div>
-            <div className={`tax-val ${tax.stcgGain>0?'up-text':tax.stcgGain<0?'dn-text':'neutral-text'}`}>{tax.stcgGain>0?'+₹'+fIN(tax.stcgGain):tax.stcgGain<0?'-₹'+fIN(Math.abs(tax.stcgGain)):'₹0'}</div>
-            <div className="tax-sub">Invested: {hide('₹'+fIN(tax.stcgInvested))} → Current: {hide('₹'+fIN(tax.stcgCurVal))}</div>
-            {tax.stcgGain>0?<div className="tax-sub" style={{marginTop:3}}>Est. STCG Tax: <b style={{color:'#ef4444'}}>₹{fIN(tax.stcgTax)}</b> (20% tax flat)</div>
+            <div className={`tax-val ${tax.stcgGain>0?'up-text':tax.stcgGain<0?'dn-text':'neutral-text'}`}>{tax.stcgGain>0?'+₹'+(amtHidden?'••••':fIN(tax.stcgGain)):tax.stcgGain<0?'-₹'+(amtHidden?'••••':fIN(Math.abs(tax.stcgGain))):'₹0'}</div>
+            <div className="tax-sub">Invested: ₹{amtHidden?'••••':fIN(tax.stcgInvested)} → Current: ₹{amtHidden?'••••':fIN(tax.stcgCurVal)}</div>
+            {tax.stcgGain>0?<div className="tax-sub" style={{marginTop:3}}>Est. STCG Tax: <b style={{color:'#ef4444'}}>₹{amtHidden?'••••':fIN(tax.stcgTax)}</b> (20% tax flat)</div>
               :tax.stcgGain<0?<div className="tax-sub" style={{marginTop:3,color:'#f87171'}}>Unrealised loss — no tax</div>
               :<div className="tax-sub" style={{marginTop:3,color:'#7080a0'}}>No tax liability</div>}
           </div>
@@ -188,11 +195,11 @@ export default function FundDetail({ fundKey }) {
                       <td style={{textAlign:'center'}}><span className={isBuy?'bo':'bc'}>{tx.type}</span></td>
                       <td style={{textAlign:'center'}}>{hide(txUnits.toFixed(3))}</td>
                       <td style={{textAlign:'center'}}>₹{fINd(txNav)}</td>
-                      <td style={{textAlign:'center'}}>{hide('₹'+fIN(tx.amount))}</td>
-                      <td style={{color:'#c9a84c',fontSize:11,textAlign:'center'}}>{tx.stamp?(hide('₹'+parseFloat(tx.stamp).toFixed(2))):'--'}</td>
-                      <td style={{textAlign:'center',fontWeight:600}}>{hide('₹'+fIN(totalAmt))}</td>
+                      <td style={{textAlign:'center'}}>{'₹'+fIN(tx.amount)}</td>
+                      <td style={{color:'#c9a84c',fontSize:11,textAlign:'center'}}>{tx.stamp?('₹'+(amtHidden?'••••':parseFloat(tx.stamp).toFixed(2))):'--'}</td>
+                      <td style={{textAlign:'center',fontWeight:600}}>{'₹'+fIN(totalAmt)}</td>
                       {isBuy&&curNav
-                        ?<><td style={{textAlign:'center',fontWeight:600,color:'#e0e8ff'}}>{hide('₹'+fIN(curVal2))}</td><td style={{textAlign:'center',fontWeight:600,color:retCol}}>{hide((retAmt>=0?'+':'−')+'₹'+fIN(Math.abs(retAmt))+' ('+(retPct>=0?'+':'')+retPct.toFixed(2)+'%)')}</td></>
+                        ?<><td style={{textAlign:'center',fontWeight:600,color:'#e0e8ff'}}>{'₹'+fIN(curVal2)}</td><td style={{textAlign:'center',fontWeight:600,color:retCol}}>{(retAmt>=0?'+':'−')+'₹'+(amtHidden?'••••':fIN(Math.abs(retAmt)))+' ('+(retPct>=0?'+':'')+retPct.toFixed(2)+'%)'}</td></>
                         :<><td style={{textAlign:'center',color:'#6b7a9a'}}>--</td><td style={{textAlign:'center',color:'#6b7a9a'}}>--</td></>
                       }
                       <td>
@@ -212,18 +219,18 @@ export default function FundDetail({ fundKey }) {
                 const totCost=buyTxs.reduce((s,t)=>s+Math.round(parseFloat(t.units||0)*parseFloat(t.nav||0)+parseFloat(t.stamp||0)),0);
                 const diff=totCur-totCost,pct=totCost>0?(diff/totCost*100):0;
                 return(
-                  <tr style={{background:'#0f1929',borderTop:'2px solid #2a3a55'}}>
+                  <tr style={{background:isDark?'#0d0d0d':'#0f1929',borderTop:`2px solid ${isDark?'#1e1e1e':'#2a3a55'}`}}>
                     <td style={{color:'#6b7a9a',fontSize:10,textAlign:'center'}}></td>
                     <td style={{color:'#e0e8ff',fontSize:12,fontWeight:600,textAlign:'center'}}>{portfolioAge}</td>
                     <td style={{color:'#e0e8ff',fontSize:12,fontWeight:600,textAlign:'center'}}>{buyTxs.length} invested</td>
                     <td style={{textAlign:'center',color:'#e0e8ff',fontWeight:600}}>{hide(totalUnitsHeld.toFixed(3))}</td>
                     <td style={{textAlign:'center',color:'#e0e8ff',fontWeight:600}}>₹{fINd(avgNavCalc)}</td>
-                    <td style={{textAlign:'center',color:'#e0e8ff',fontWeight:600}}>{hide('₹'+fIN(txs.reduce((s,t)=>s+(t.type==='Invested'?parseFloat(t.amount||0):-parseFloat(t.amount||0)),0)))}</td>
-                    <td style={{color:'#c9a84c',fontWeight:600,textAlign:'center'}}>{hide('₹'+txs.reduce((s,t)=>s+parseFloat(t.stamp||0),0).toFixed(2))}</td>
-                    <td style={{textAlign:'center',color:'#c9a84c',fontWeight:600}}>{hide('₹'+fIN(txs.reduce((s,t)=>s+parseFloat(t.amount||0)+parseFloat(t.stamp||0),0)))}</td>
-                    <td style={{textAlign:'center',fontWeight:600,color:'#e0e8ff'}}>{curNav?hide('₹'+fIN(totCur)):'--'}</td>
+                    <td style={{textAlign:'center',color:'#e0e8ff',fontWeight:600}}>{'₹'+fIN(txs.reduce((s,t)=>s+(t.type==='Invested'?parseFloat(t.amount||0):-parseFloat(t.amount||0)),0))}</td>
+                    <td style={{color:'#c9a84c',fontWeight:600,textAlign:'center'}}>{'₹'+(amtHidden?'••••':txs.reduce((s,t)=>s+parseFloat(t.stamp||0),0).toFixed(2))}</td>
+                    <td style={{textAlign:'center',color:'#c9a84c',fontWeight:600}}>{'₹'+fIN(txs.reduce((s,t)=>s+parseFloat(t.amount||0)+parseFloat(t.stamp||0),0))}</td>
+                    <td style={{textAlign:'center',fontWeight:600,color:'#e0e8ff'}}>{curNav?'₹'+fIN(totCur):'--'}</td>
                     <td style={{textAlign:'center',fontWeight:600}}>
-                      {curNav?<span style={{color:diff>=0?'#34d399':'#f87171'}}>{hide((diff>=0?'+':'−')+'₹'+fIN(Math.abs(diff))+' ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)')}</span>:'--'}
+                      {curNav?<span style={{color:diff>=0?'#34d399':'#f87171'}}>{(diff>=0?'+':'−')+'₹'+(amtHidden?'••••':fIN(Math.abs(diff)))+' ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)'}</span>:'--'}
                     </td>
                     <td></td>
                   </tr>
