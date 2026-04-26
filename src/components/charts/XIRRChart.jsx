@@ -37,14 +37,14 @@ export default function XIRRChart({ db, page, onPageChange }) {
         ctx.textAlign='center';ctx.fillStyle=isPos?'#34d399':'#f87171';ctx.font='bold 11px Segoe UI,system-ui,sans-serif';
         if(isPos){ctx.textBaseline='bottom';ctx.fillText((v>=0?'+':'')+v+'%',bar.x,bar.y-3);}
         else{ctx.textBaseline='top';ctx.fillText(v+'%',bar.x,bar.y+3);}
-      },[drawLTRPlugin]);ctx.restore();
+      });ctx.restore();
     }};
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
     if(!chartRef.current)return;
     const ctx2d=chartRef.current?.getContext('2d');if(!ctx2d)return;
     chartInst.current=new window.Chart(ctx2d,{
       type:'bar',data:{labels:slice,datasets:[{label:'XIRR %',data:xv,backgroundColor:xv.map(v=>v>=0?'#34d399':'#f87171'),borderRadius:5,barPercentage:0.5,categoryPercentage:0.6}]},
-      options:{responsive:true,maintainAspectRatio:false,animation:{duration:0},layout:{padding:{top:24,bottom:18}},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24,bottom:18}},
         plugins:{legend:{display:false}},
         scales:{x:{ticks:{color:'#8899bb',font:{size:11}},grid:{display:false},border:{display:false}},
           y:{ticks:{color:'#8899bb',callback:v=>v+'%',maxTicksLimit:5},grid:{display:false},border:{display:false},afterDataLimits(a){if(a.max>0)a.max=a.max*1.2;if(a.min<0)a.min=a.min*1.4;}}}

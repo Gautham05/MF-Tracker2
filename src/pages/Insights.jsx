@@ -100,7 +100,7 @@ export default function Insights() {
         <div key={cell} onClick={()=>{
           if(!titleData){setCalTooltip('');return;}
           const txInfo=[];
-          keys.forEach(k=>{(db.mf[k]?.transactions||[]).forEach(t=>{if(t.date===dateStr)txInfo.push((MF_FUNDS[k]?.name||k)+': '+(t.type==='Invested'?'Bought':'Sold')+' ₹'+fIN(parseFloat(t.amount||0)));});});
+          keys.forEach(k=>{(db.mf[k]?.transactions||[]).forEach(t=>{if(t.date===dateStr)txInfo.push(k+': '+(t.type==='Invested'?'Bought':'Sold')+' ₹'+fIN(parseFloat(t.amount||0)));});});
           setCalTooltip(`${dateStr}   P&L: ${titleData}${txInfo.length?' | '+txInfo.join(' | '):''}`);
         }}
           style={{background:bg,border:`1px solid ${border}`,borderRadius:5,cursor:chg!==null?'pointer':'default',height:40,overflow:'hidden',display:'flex',flexDirection:'column',justifyContent:'space-between',position:'relative',padding:'4px 5px',boxSizing:'border-box'}}>
@@ -219,7 +219,7 @@ export default function Insights() {
       </div>
 
       {/* ROW 2: Monthly Summary (65%) + Quarterly (35%) */}
-      <div style={{display:'grid',gridTemplateColumns:'65fr 35fr',gap:14,marginBottom:16}}>
+      <div className="ins-monthly-quarterly" style={{display:'grid',gridTemplateColumns:'65fr 35fr',gap:14,marginBottom:16}}>
         {/* Monthly */}
         <div className="cc" style={{marginBottom:0}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>

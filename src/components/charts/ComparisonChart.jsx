@@ -172,7 +172,8 @@ export default function ComparisonChart({ db }) {
             return(
               <div key={key} style={{display:'flex',alignItems:'center',gap:5}}>
                 <div style={{width:16,height:3,background:MF_FUNDS[key]?.color||'#c9a84c',borderRadius:2}}/>
-                <span style={{fontSize:11,color:'#d0d8f0'}}>{MF_FUNDS[key]?.name||key}</span>
+                <span className="comp-full-name" style={{fontSize:11,color:'#d0d8f0'}}>{MF_FUNDS[key]?.name||key}</span>
+                <span className="comp-short-name" style={{fontSize:11,color:'#d0d8f0',display:'none'}}>{key}</span>
                 <span style={{fontSize:11,fontWeight:700,color:col}}>{pct>=0?'+':''}{pct.toFixed(2)}%</span>
               </div>
             );

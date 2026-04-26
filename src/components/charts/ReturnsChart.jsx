@@ -40,7 +40,7 @@ export default function ReturnsChart({ db, page, onPageChange }) {
         if(isPos){ctx.textBaseline='bottom';ctx.fillText('+'+v+'%',bar.x,bar.y-3);}else{ctx.textBaseline='top';ctx.fillText(v+'%',bar.x,Math.min(bar.y+3,scales.x.top-20));}
         ctx.textBaseline='top';ctx.font='bold 11px Segoe UI,system-ui,sans-serif';
         ctx.fillText('('+amtSign+'₹'+fIN(Math.abs(Math.round(amt)))+')',bar.x,scales.x.bottom+4);
-      },[drawLTRPlugin]);ctx.restore();
+      });ctx.restore();
     }};
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
     if(!chartRef.current)return;

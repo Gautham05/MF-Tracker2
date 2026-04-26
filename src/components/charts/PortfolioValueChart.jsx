@@ -23,7 +23,7 @@ const drawLinePlugin={
   afterDraw(chart){if(!chart._ltrDone)chart.ctx.restore();}
 };
 
-export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M', amtHidden, isFundPage=false, histLoaded=0 }) {
+export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M', amtHidden, isFundPage=false }) {
   const chartRef=useRef(null);
   const chartInst=useRef(null);
   const hilowRef=useRef(null);
@@ -164,7 +164,7 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
 
   // Rebuild when tf changes OR navVersion changes (NAV refresh completed)
   // Rebuild when tf changes OR when db changes (NAV refresh completed)
-  useEffect(()=>{buildChart(tf);},[tf,db,histLoaded,buildChart]);
+  useEffect(()=>{buildChart(tf);},[tf,db,buildChart]);
   useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[]);
 
   if(isFundPage){

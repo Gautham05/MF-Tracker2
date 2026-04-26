@@ -22,7 +22,9 @@ const useAppStore = create((set, get) => ({
     setTimeout(()=>{
       const el = document.getElementById('main-content');
       if(el) el.scrollTop = 0;
-      window.scrollTo(0,0);
+      window.scrollTo({top:0, left:0, behavior:'instant'});
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     }, 0);
   },
   toggleSidebar() { set(s => ({ sidebarOpen: !s.sidebarOpen })); },

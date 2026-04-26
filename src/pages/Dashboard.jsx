@@ -26,24 +26,25 @@ export default function Dashboard() {
   const db = useAppStore(s => s.db);
   const setPage = useAppStore(s => s.setPage);
   const amtHidden = useAppStore(s => s.amtHidden);
-  const loadNavHistory = useAppStore(s => s.loadNavHistory);
   const [chartPage,setChartPage]=useState(0);
   const keys=Object.keys(MF_FUNDS);
 
   // Pre-load nav history for all funds from db (localStorage) — instant, no network
   // Pre-load all nav histories then trigger ONE re-render for charts
-  const [histLoaded, setHistLoaded] = useState(0);
   useEffect(()=>{
     let cancelled=false;
     async function preload(){
-      let loaded=0;
-      for(const k of keys){
+      // Skip if auto-fetch is running after import (fetchNAV handles everything)
+      if(localStorage.getItem('mft_auto_nav')==='1')return;
+      // Check if any fund is missing from cache (not pre-populated by main.jsx)
+      const missing=keys.filter(k=>!navHistoryCache[k]);
+      if(!missing.length)return; // All already in cache — no render needed
+      for(const k of missing){
         if(cancelled)break;
         await loadNavHistory(k);
-        loaded++;
       }
-      // ONE state update after ALL funds loaded = ONE chart rebuild (no per-fund flicker)
-      if(!cancelled && loaded>0) setHistLoaded(v=>v+1);
+      // ONE state update only if we actually loaded something new
+      if(!cancelled) setHistLoaded(v=>v+1);
     }
     preload();
     return ()=>{cancelled=true;};
@@ -121,7 +122,7 @@ export default function Dashboard() {
 
       {/* ROW 3: PORTFOLIO VALUE CHART */}
       {keys.length>0&&(
-        <PortfolioValueChart canvasId="dash-pvc" keys={keys} db={db} amtHidden={amtHidden} histLoaded={histLoaded} key="dash-pvc"/>
+        <PortfolioValueChart canvasId="dash-pvc" keys={keys} db={db} amtHidden={amtHidden} key="dash-pvc"/>
       )}
 
       {/* ROW 4: FUND OVERVIEW CARDS */}
