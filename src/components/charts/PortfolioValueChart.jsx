@@ -27,6 +27,7 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
   const chartRef=useRef(null);
   const chartInst=useRef(null);
   const hilowRef=useRef(null);
+  const hilowMobileRef=useRef(null);
   const hoverRef=useRef(null);
   const [tf,setTf]=useState(defaultTF);
   const [curVal,setCurVal]=useState('--');
@@ -157,6 +158,7 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
           +'<span style="color:'+hiC+';font-weight:600">'+hiS+'₹'+fIN(Math.abs(hi))+'</span>'
           +'&nbsp;&nbsp;<span style="color:#6b7a9a">Low: </span>'
           +'<span style="color:'+loC+';font-weight:600">'+loS+'₹'+fIN(Math.abs(lo))+'</span>';
+          if(hilowMobileRef.current)hilowMobileRef.current.innerHTML=hilowRef.current.innerHTML;
       }
     }
   // eslint-disable-next-line
@@ -170,6 +172,7 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
   if(isFundPage){
     return(
       <div className="pvc-wrap" style={{marginBottom:0}}>
+        {/* Header: values + TF top — exact HTML */}
         <div className="pvc-header pvc-header-fund">
           <div className="pvc-left" style={{gap:12}}>
             <div className="pvc-item">
@@ -181,22 +184,33 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
               <div className="pvc-val" style={{fontSize:16}}>{invVal}</div>
             </div>
           </div>
+          {/* pvc-ret-inner: shown on mobile only (inside header) */}
+          <div className="pvc-ret-inner" style={{fontSize:13,fontWeight:700,color:retColor,display:'none'}}>{retTxt}</div>
           <div className="pvc-tf pvc-tf-top">
-            {TFS.map(t=><button key={t} className={"tf-btn"+(tf===t?' tf-active':'')} onClick={()=>setTf(t)}>{t}</button>)}
+            {TFS.map(t=><button key={t} className={"tf-btn"+(tf===t?' tf-active':'')} onClick={()=>{setTf(t);userChangedTFRef.current=true;}}>{t}</button>)}
           </div>
         </div>
-        <div style={{fontSize:13,fontWeight:700,height:20,color:retColor,marginBottom:2}}>{retTxt}</div>
+        {/* pvc-ret-pc: shown on desktop only */}
+        <div className="pvc-ret-pc" style={{fontSize:13,fontWeight:700,height:20,color:retColor,marginBottom:2}}>{retTxt}</div>
         <div style={{height:13,fontSize:10,color:'#7080a0',marginBottom:4}}>{status}</div>
-        <div ref={hoverRef} style={{height:22,marginBottom:4,overflow:'hidden',whiteSpace:'nowrap'}}/>
+        <div ref={hoverRef} style={{height:'auto',minHeight:20,marginBottom:4,overflow:'visible',whiteSpace:'normal'}}/>
         <div style={{position:'relative',height:200}}><canvas ref={chartRef} id={canvasId}/></div>
         <div className="pvc-canvas-spacer" style={{height:16,marginTop:3}}/>
+        {/* TF buttons below chart — shown on mobile only */}
         <div className="pvc-tf-bottom" style={{display:'none',justifyContent:'center',gap:3,flexWrap:'wrap'}}>
-          {TFS.map(t=><button key={t} className={"tf-btn"+(tf===t?' tf-active':'')} onClick={()=>setTf(t)}>{t}</button>)}
+          {TFS.map(t=><button key={t} className={"tf-btn"+(tf===t?' tf-active':'')} onClick={()=>{setTf(t);userChangedTFRef.current=true;}}>{t}</button>)}
         </div>
+        {/* Mobile footer: hilow below labels */}
+        <div className="pvc-footer-mobile" style={{display:'none'}}>
+          <span style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Portfolio Value</span>
+          <span style={{whiteSpace:'nowrap',marginLeft:8}}><span className="pvc-line-inv" style={{marginRight:4}}/> Invested</span>
+          <span ref={hilowMobileRef} className="pvc-hilow-span" style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
+        </div>
+        {/* PC footer: all on one line */}
         <div className="pvc-footer-pc" style={{marginTop:8,display:'flex',gap:10,fontSize:10.5,color:'#9aaac8',flexWrap:'nowrap',alignItems:'center',overflow:'hidden'}}>
           <span style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Portfolio Value</span>
           <span style={{whiteSpace:'nowrap'}}><span className="pvc-line-inv" style={{marginRight:4}}/> Invested</span>
-          <span ref={hilowRef} style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
+          <span ref={hilowRef} className="pvc-hilow-span" style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
         </div>
       </div>
     );
@@ -221,15 +235,22 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
       </div>
       <div style={{fontSize:13,fontWeight:700,height:20,color:retColor,marginBottom:2}}>{retTxt}</div>
       <div style={{height:13,fontSize:10,color:'#7080a0',marginBottom:4}}>{status}</div>
-      <div ref={hoverRef} style={{height:22,marginBottom:4,overflow:'hidden',whiteSpace:'nowrap'}}/>
+      <div ref={hoverRef} style={{height:'auto',minHeight:20,marginBottom:4,overflow:'visible',whiteSpace:'normal'}}/>
       <div style={{position:'relative',height:240}}><canvas ref={chartRef} id={canvasId}/></div>
       <div className="dash-pvc-tf-bottom" style={{display:'none',justifyContent:'center',gap:3,flexWrap:'wrap',marginTop:8,marginBottom:8}}>
         {TFS.map(t=><button key={t} className={"tf-btn"+(tf===t?' tf-active':'')} onClick={()=>setTf(t)}>{t}</button>)}
       </div>
+      {/* Mobile footer */}
+      <div className="pvc-footer-mobile" style={{display:'none',marginTop:6,fontSize:9.5,color:'#9aaac8',lineHeight:1.4,flexWrap:'wrap',gap:4,alignItems:'center'}}>
+        <span style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Current</span>
+        <span style={{whiteSpace:'nowrap',marginLeft:8}}><span className="pvc-line-inv" style={{marginRight:4}}/> Invested</span>
+        <span ref={hilowMobileRef} className="pvc-hilow-span" style={{fontSize:'9px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap',width:'100%',textAlign:'right'}}/>
+      </div>
+      {/* PC footer */}
       <div className="dash-pvc-footer" style={{marginTop:10,display:'flex',gap:14,fontSize:10.5,color:'#9aaac8',flexWrap:'nowrap',alignItems:'center',overflow:'hidden'}}>
         <span className="dash-pvc-line-labels" style={{whiteSpace:'nowrap'}}><span className="pvc-line-cur" style={{marginRight:4}}/> Current Portfolio Value</span>
         <span className="dash-pvc-line-labels" style={{whiteSpace:'nowrap'}}><span className="pvc-line-inv" style={{marginRight:4}}/> Total Invested</span>
-        <span ref={hilowRef} style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
+        <span ref={hilowRef} className="pvc-hilow-span" style={{fontSize:'9.5px',color:'#7080a0',marginLeft:'auto',whiteSpace:'nowrap'}}/>
       </div>
     </div>
   );

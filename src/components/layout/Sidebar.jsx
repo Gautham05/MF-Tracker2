@@ -112,7 +112,7 @@ export default function Sidebar() {
           <button className={`nav-btn${currentPage==='Dashboard'?' active':''}`} onClick={()=>setPage('Dashboard')}>
             <span className="nicon">◎</span><span>Dashboard</span>
           </button>
-          <button className={`nav-btn${currentPage==='Insights'?' active':''}`} onClick={()=>setPage('Insights')}>
+          <button className={`nav-btn${currentPage==='Insights'?' active':''} sidebar-insights-btn`} onClick={()=>setPage('Insights')}>
             <span className="nicon">✦</span><span>Insights</span>
           </button>
           {funds.length>0&&<div className="slabel" style={{marginTop:6}}>Funds</div>}

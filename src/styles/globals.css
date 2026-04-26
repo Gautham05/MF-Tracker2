@@ -212,4 +212,5 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   [id^="nav-tx-hover-"]{min-height:36px !important;overflow:visible !important;line-height:1.6 !important;padding-top:4px !important;font-size:11px !important;}
   /* Hide Insights page completely on mobile */
   .insights-page{display:none !important;}
+  .sidebar-insights-btn{display:none !important;}
 }
