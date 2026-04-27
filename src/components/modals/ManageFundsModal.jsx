@@ -87,9 +87,9 @@ export default function ManageFundsModal({ onClose, onAddNew }) {
                         :<div id={`mf-dot-${k}`} style={{width:30,height:30,borderRadius:'50%',background:colorVals[k]||f.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#1a2235',flexShrink:0}}>{k[0]}</div>
                       }
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:'12.5px',fontWeight:700,color:'#e0e8ff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.name}</div>
-                        <div style={{fontSize:10,color:'#6b7a9a',marginTop:1}}>{k} · {f.category||'—'} · TER: {f.ter>0?<span style={{color:'#c9a84c',fontWeight:700}}>{f.ter}%</span>:<span style={{color:'#6b7a9a'}}>-</span>}</div>
-                        <div style={{fontSize:10,color:'#9aaac8',marginTop:1}}>{txCount} txns · {'₹'+fIN(s.totalInvested)}</div>
+                        <div style={{fontSize:'12.5px',fontWeight:700,color:'#e0e8ff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.name}{f.code?<span style={{color:'#6b7a9a',fontWeight:400}}> - {f.code}</span>:''}</div>
+                        <div style={{fontSize:10,color:'#d0d8f0',marginTop:1}}>{k} · {f.category||'—'} · TER: {f.ter>0?<span style={{color:'#c9a84c',fontWeight:700}}>{f.ter}%</span>:<span style={{color:'#9aaac8'}}>-</span>}</div>
+                        <div style={{fontSize:10,color:'#d0d8f0',marginTop:1}}>{txCount} txns · {'₹'+fIN(s.totalInvested)}</div>
                       </div>
                       <div style={{display:'flex',flexDirection:'column',gap:3,flexShrink:0}}>
                         <button onClick={()=>handleDelete(k)} style={{visibility:editMode?'visible':'hidden',background:'#2a1515',border:'1px solid #4a2020',color:'#f87171',width:26,height:22,borderRadius:5,cursor:'pointer',fontSize:10,padding:0,lineHeight:1}}>✕</button>
@@ -98,11 +98,11 @@ export default function ManageFundsModal({ onClose, onAddNew }) {
                     </div>
                     {/* Bottom row: KEY + TER% + color dots */}
                     <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',padding:'6px 12px',borderTop:`1px solid ${isDark?'#1e1e1e':'#1e2840'}`,background:isDark?'#0d0d0d':'#111a2a'}}>
-                      <span style={{fontSize:10,color:'#8899bb',fontWeight:700}}>KEY</span>
+                      <span style={{fontSize:10,color:'#d0d8f0',fontWeight:700}}>KEY</span>
                       <input id={`mf-key-${k}`} defaultValue={k} maxLength={8} disabled={!editMode}
                         style={{width:56,padding:'3px 5px',border:`1px solid ${isDark?'#222':'#2a3348'}`,borderRadius:5,background:isDark?'#0a0a0a':'#0d1117',color:'#e0e4ef',fontSize:11,outline:'none',textTransform:'uppercase',opacity:editMode?1:0.45,pointerEvents:editMode?'auto':'none'}} onChange={e=>setKeyVals(v=>({...v,[k]:e.target.value.toUpperCase()}))}
                         onInput={e=>e.target.value=e.target.value.toUpperCase()}/>
-                      <span style={{fontSize:10,color:'#8899bb',fontWeight:700}}>TER%</span>
+                      <span style={{fontSize:10,color:'#d0d8f0',fontWeight:700}}>TER%</span>
                       <input type="number" id={`ter-${k}`} defaultValue={f.ter||''} placeholder="0.68" step="0.01" min="0" max="5" disabled={!editMode}
                         style={{width:56,padding:'3px 5px',border:`1px solid ${isDark?'#222':'#2a3348'}`,borderRadius:5,background:isDark?'#0a0a0a':'#0d1117',color:'#e0e4ef',fontSize:11,outline:'none',opacity:editMode?1:0.45,pointerEvents:editMode?'auto':'none',MozAppearance:'textfield'}}
                         onChange={e=>setTerVals(v=>({...v,[k]:e.target.value}))}/>

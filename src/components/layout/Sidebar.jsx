@@ -91,22 +91,67 @@ export default function Sidebar() {
           { variant:'alert-warn', confirmLabel:'Import & Replace', cancelLabel:'Cancel' }
         );
         if (!ok) return;
-        // Write ONLY mf and customFunds — clear navData and navHistory completely
-        // so stale/mismatched NAV data from old session doesn't break the app
-        // User clicks Refresh NAV after import to rebuild everything fresh
+        // Validate each fund code against mfapi before importing
+        const funds = data.customFunds || [];
+        const invalidFunds = [];
+        const validFunds = [];
+        if (funds.length > 0) {
+          appAlert('Validating fund codes with AMFI...', {variant:'alert', confirmLabel:'OK'});
+          for (const f of funds) {
+            const code = f.data?.code || f.code;
+            if (!code) { invalidFunds.push(`${f.key}: no scheme code`); continue; }
+            try {
+              const r = await fetch(`https://api.mfapi.in/mf/${code}`);
+              const j = await r.json();
+              if (j.data && j.data.length && j.meta?.scheme_name) {
+                validFunds.push({ f, schemeName: j.meta.scheme_name });
+              } else {
+                invalidFunds.push(`${f.key} (code ${code}): not found in AMFI`);
+              }
+            } catch(e) {
+              invalidFunds.push(`${f.key} (code ${code}): network error`);
+            }
+          }
+        }
+        if (invalidFunds.length > 0) {
+          if (validFunds.length === 0) {
+            await appAlert('⚠ All fund codes are invalid:\n\n' + invalidFunds.join('\n') + '\n\nImport cancelled.', {variant:'alert-warn', confirmLabel:'OK'});
+            return;
+          }
+          const skip = await appConfirm(
+            '⚠ These fund codes are invalid and will be skipped:\n\n' + invalidFunds.join('\n') +
+            '\n\n' + validFunds.length + ' valid fund(s) will be imported. Continue?',
+            {variant:'alert-warn', confirmLabel:'Import Valid Funds', cancelLabel:'Cancel'}
+          );
+          if (!skip) return;
+        }
+        // Show final confirmation with validated fund list
+        const validList = validFunds.map(v => `✓ ${v.f.key}: ${v.schemeName}`).join('\n');
+        const finalOk = await appConfirm(
+          'Ready to import ' + validFunds.length + ' fund' + (validFunds.length!==1?'s':'') + ':\n\n' + validList +
+          '\n\n⚠ This will REPLACE all current data.',
+          {variant:'alert-warn', confirmLabel:'Import & Replace', cancelLabel:'Cancel'}
+        );
+        if (!finalOk) return;
+        // Build clean data with only valid funds
+        const validKeys = new Set(validFunds.map(v => v.f.key));
+        const cleanMF = {};
+        Object.entries(data.mf || {}).forEach(([k,v]) => { if(validKeys.has(k)) cleanMF[k] = v; });
         const clean = {
-          mf: data.mf || {},
-          customFunds: data.customFunds || [],
+          mf: cleanMF,
+          customFunds: validFunds.map(v => v.f),
           navData: {},
           navHistory: {},
           navDate: '',
         };
         localStorage.setItem('mf_manage_v2.0', JSON.stringify(clean));
+        const importedFundCount = Object.keys(cleanMF).length;
+        const importedTxCount = Object.values(cleanMF).reduce((s,f)=>s+(f.transactions?.length||0),0);
         appAlert(
           '✓ Data imported successfully!\n\n' +
-          fundCount + ' fund' + (fundCount!==1?'s':'') + ' and ' +
-          txCount + ' transaction' + (txCount!==1?'s':'') + ' restored.\n\n' +
-          'The page will reload — then click Refresh NAV to load chart data.',
+          importedFundCount + ' fund' + (importedFundCount!==1?'s':'') + ' and ' +
+          importedTxCount + ' transaction' + (importedTxCount!==1?'s':'') + ' restored.\n\n' +
+          'The page will reload — then click Refresh NAV to load names and chart data.',
           {variant:'alert', confirmLabel:'Reload Now'}
         ).then(()=>{
           localStorage.setItem('mft_auto_nav', '1');

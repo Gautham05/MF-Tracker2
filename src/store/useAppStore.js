@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { loadDB, saveDB } from './db.js';
-import { MF_FUNDS, navHistoryCache, fundMetaCache, syncFundsFromDB, normalizeFundCategory, parseMFData } from '../constants/funds.js';
+import { MF_FUNDS, navHistoryCache, fundMetaCache, syncFundsFromDB, normalizeFundCategory, parseMFData, buildStandardFullName } from '../constants/funds.js';
 
 const useAppStore = create((set, get) => ({
   db: loadDB(),
@@ -59,6 +59,17 @@ const useAppStore = create((set, get) => ({
           const rawCat = j.meta?.scheme_category || j.meta?.scheme_type || '';
           const cat = normalizeFundCategory(rawCat, MF_FUNDS[key]?.fullName||'');
           fundMetaCache[key] = { fundHouse: j.meta?.fund_house||'', schemeCategory: cat };
+          // Update name from API — always overwrite with real AMFI name
+          if (j.meta?.scheme_name && MF_FUNDS[key]) {
+            const fn = buildStandardFullName(j.meta.scheme_name);
+            let sn = fn.replace(/\s*-\s*Direct Plan\s*-\s*Growth$/,'').replace(/\s*-\s*Regular Plan\s*-\s*Growth$/,' (Reg)')
+              .replace(/\s*-\s*Direct Plan\s*-\s*IDCW$/,' IDCW').replace(/\s*-\s*Regular Plan\s*-\s*IDCW$/,' IDCW (Reg)')
+              .replace(/\s*Fund$/,'').replace(/\s+/g,' ').trim();
+            if(/Regular Plan/i.test(fn)&&!/IDCW/i.test(fn)&&!sn.endsWith(' (Reg)'))sn+=' (Reg)';
+            if(sn.length>32)sn=sn.slice(0,30)+'\u2026';
+            MF_FUNDS[key].name = sn; MF_FUNDS[key].fullName = fn;
+            if (newDb.customFunds) newDb.customFunds.forEach(f => { if(f.key===key){f.data.name=sn;f.data.fullName=fn;} });
+          }
           if (MF_FUNDS[key] && cat) {
             MF_FUNDS[key].category = cat;
             if (newDb.customFunds) newDb.customFunds.forEach(f => { if(f.key===key) f.data.category=cat; });
