@@ -8,7 +8,7 @@ export default function Topbar() {
   return (
     <div className="topbar">
       <button className="hamburger" onClick={toggleSidebar}><span/><span/><span/></button>
-      <div className="topbar-brand"><b>MF Tracker</b> <span>v2.1</span></div>
+      <div className="topbar-brand"><b>Mutual Fund Tracker</b></div>
       <div className="topbar-right">
         <span className="nav-status" id="nav-status">NAV not loaded</span>
         <button className="refresh-btn" id="nav-btn" onClick={fetchNAV} style={{minWidth:34,width:34,height:34,padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>↻</button>

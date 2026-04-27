@@ -26,6 +26,8 @@ export default function Insights() {
   const [calYear, setCalYear] = useState(now.getFullYear());
   const [selYear, setSelYear] = useState(now.getFullYear());
   const [qCalFund, setQCalFund] = useState('ALL');
+  const [calFund, setCalFund] = useState('ALL');   // day calendar fund filter
+  const [moFund, setMoFund] = useState('ALL');     // monthly table fund filter
   const [calTooltip, setCalTooltip] = useState('');
 
   const firstDate = useMemo(()=>{
@@ -41,6 +43,25 @@ export default function Insights() {
   );
 
   // Build date→portfolio value map (carry-forward NAV)
+  function buildDateValMap(ks){
+    const _allDatesSet={};
+    ks.forEach(k=>{const h=navHistoryCache[k];if(h)h.forEach(d=>{_allDatesSet[d.dateStr]=true;});});
+    const _allDates=Object.keys(_allDatesSet).sort();
+    const map={};
+    ks.forEach(k=>{
+      const h=navHistoryCache[k],txs=db.mf[k]?.transactions||[];
+      if(!h||!h.length)return;
+      const navByDate={};h.forEach(d=>{navByDate[d.dateStr]=d.nav;});
+      let lastNav=0;
+      _allDates.forEach(dt=>{
+        if(navByDate[dt])lastNav=navByDate[dt];
+        if(!lastNav)return;
+        let units=0;txs.forEach(t=>{if(t.date<=dt){units+=t.type==='Invested'?parseFloat(t.units||0):-parseFloat(t.units||0);}});
+        if(units>0){if(!map[dt])map[dt]=0;map[dt]+=units*lastNav;}
+      });
+    });
+    return map;
+  }
   const dateValMap = useMemo(()=>{
     const _allDatesSet={};
     keys.forEach(k=>{const h=navHistoryCache[k];if(h)h.forEach(d=>{_allDatesSet[d.dateStr]=true;});});
@@ -61,13 +82,16 @@ export default function Insights() {
     return map;
   },[keys,db]);
   const allNavDates = Object.keys(dateValMap).sort();
+  // Filtered keys for each section
+  const calKeys = calFund === 'ALL' ? keys : keys.filter(k => k === calFund);
+  const moKeys  = moFund  === 'ALL' ? keys : keys.filter(k => k === moFund);
 
-  function getDayPL(dateStr){
+  function getDayPL(dateStr, ks=keys){
     const idx=allNavDates.indexOf(dateStr);if(idx<0)return null;
     const curVal=dateValMap[dateStr];if(idx===0)return null;
     const prevVal=dateValMap[allNavDates[idx-1]];if(!prevVal)return null;
     let newMoney=0;
-    keys.forEach(k=>{(db.mf[k]?.transactions||[]).forEach(t=>{
+    ks.forEach(k=>{(db.mf[k]?.transactions||[]).forEach(t=>{
       if(t.date===dateStr){if(t.type==='Invested')newMoney+=Math.round(parseFloat(t.amount||0)+parseFloat(t.stamp||0));else newMoney-=parseFloat(t.amount||0);}
     });});
     const chg=(curVal-prevVal)-newMoney;const pct=prevVal>0?(chg/prevVal*100):0;
@@ -76,6 +100,20 @@ export default function Insights() {
 
   // ── Day Calendar ── (exact HTML: 42 cells, colored bg with intensity, pill for text, gold dot for tx)
   function renderCalendar(){
+    // Build filtered map for selected fund
+    const calDVM = calFund==='ALL' ? dateValMap : buildDateValMap(calKeys);
+    const calNavDates = Object.keys(calDVM).sort();
+    function getCalDayPL(dateStr){
+      const idx=calNavDates.indexOf(dateStr);if(idx<0)return null;
+      const curVal=calDVM[dateStr];if(idx===0)return null;
+      const prevVal=calDVM[calNavDates[idx-1]];if(!prevVal)return null;
+      let newMoney=0;
+      calKeys.forEach(k=>{(db.mf[k]?.transactions||[]).forEach(t=>{
+        if(t.date===dateStr){if(t.type==='Invested')newMoney+=Math.round(parseFloat(t.amount||0)+parseFloat(t.stamp||0));else newMoney-=parseFloat(t.amount||0);}
+      });});
+      const chg=(curVal-prevVal)-newMoney;const pct=prevVal>0?(chg/prevVal*100):0;
+      return{chg,pct};
+    }
     const firstDay=new Date(calYear,calMonth,1).getDay();
     const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
     const dayLabels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -88,7 +126,7 @@ export default function Insights() {
       if(day<1||day>daysInMonth){cells.push(<div key={cell} style={{height:40}}/>);continue;}
       const mm=String(calMonth+1).padStart(2,'0'),dd=String(day).padStart(2,'0');
       const dateStr=`${calYear}-${mm}-${dd}`;
-      const pl=getDayPL(dateStr);
+      const pl=getCalDayPL(dateStr);
       const chg=pl?pl.chg:null,pct=pl?pl.pct:null;
       if(chg!==null){tradingDays++;if(chg>0)profitDays++;else if(chg<0)lossDays++;}
 
@@ -106,7 +144,7 @@ export default function Insights() {
         else{bg=isLight?'#e8ecf5':isDark?'#1a1a1a':'#1a2640';border=isLight?'#c8d0e0':isDark?'#282828':'#2a3560';}
       }
 
-      const hasTx=keys.some(k=>(db.mf[k]?.transactions||[]).some(t=>t.date===dateStr));
+      const hasTx=calKeys.some(k=>(db.mf[k]?.transactions||[]).some(t=>t.date===dateStr));
       const amtStr=chg!==null?(chg>=0?'+':'−')+'₹'+fIN(Math.abs(Math.round(chg))):'';
       const pctStr=chg!==null?'('+(pct>=0?'+':'')+pct.toFixed(2)+'%)':'';
       const titleData=chg!==null?amtStr+' '+(pct>=0?'+':'')+pct.toFixed(2)+'%':'';
@@ -115,7 +153,7 @@ export default function Insights() {
         <div key={cell} onClick={()=>{
           if(!titleData){setCalTooltip('');return;}
           const txInfo=[];
-          keys.forEach(k=>{(db.mf[k]?.transactions||[]).forEach(t=>{if(t.date===dateStr)txInfo.push(k+': '+(t.type==='Invested'?'Bought':'Sold')+' ₹'+fIN(parseFloat(t.amount||0)));});});
+          ks.forEach(k=>{(db.mf[k]?.transactions||[]).forEach(t=>{if(t.date===dateStr)txInfo.push(k+': '+(t.type==='Invested'?'Bought':'Sold')+' ₹'+fIN(parseFloat(t.amount||0)));});});
           setCalTooltip(`${dateStr}   P&L: ${titleData}${txInfo.length?' | '+txInfo.join(' | '):''}`);
         }}
           style={{background:bg,border:`1px solid ${border}`,borderRadius:5,cursor:chg!==null?'pointer':'default',height:40,overflow:'hidden',display:'flex',flexDirection:'column',justifyContent:'space-between',position:'relative',padding:'4px 5px',boxSizing:'border-box'}}>
@@ -156,7 +194,7 @@ export default function Insights() {
   }
 
   // ── Monthly Summary ── (handoff approach like HTML)
-  function getMonthlyData(year){
+  function getMonthlyData(year, ks=keys){
     const now2=new Date(),curYear=now2.getFullYear(),curMon=now2.getMonth()+1;
     const now2Str=`${curYear}-${String(curMon).padStart(2,'0')}-${String(now2.getDate()).padStart(2,'0')}`;
     const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -173,12 +211,15 @@ export default function Insights() {
       const effectiveEnd=isCurrent?now2Str:mEndStr;
 
       if(m===1||prevEndVal===0){
-        const preStart=allNavDates.slice().reverse().find(d=>d<mStartStr);
-        prevEndVal=preStart?dateValMap[preStart]:0;
+        // Use dates filtered to this fund set
+        const moDVM=ks===keys?dateValMap:buildDateValMap(ks);
+        const moNavDts=Object.keys(moDVM).sort();
+        const preStart=moNavDts.slice().reverse().find(d=>d<mStartStr);
+        prevEndVal=preStart?moDVM[preStart]:0;
       }
 
       let invested=0,redeemed=0,sipBase=0,hasData=false,endVal=0;
-      keys.forEach(k=>{
+      ks.forEach(k=>{
         const hist=navHistoryCache[k],txs=db.mf[k]?.transactions||[];
         if(!hist||!hist.length)return;
         const navEndEntry=hist.slice().reverse().find(d=>d.dateStr<=effectiveEnd);
@@ -200,7 +241,7 @@ export default function Insights() {
     }
     return months;
   }
-  const monthlyData=getMonthlyData(selYear);
+  const monthlyData=getMonthlyData(selYear,moKeys);
   const valid=monthlyData.filter(x=>x.hasData&&x.base>0&&!x.isFuture);
   const bestM=valid.length?valid.reduce((a,b)=>(b.ret/b.base)>(a.ret/a.base)?b:a):null;
   const worstM=valid.length?valid.reduce((a,b)=>(b.ret/b.base)<(a.ret/a.base)?b:a):null;
@@ -224,9 +265,13 @@ export default function Insights() {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
           <div className="cct" style={{marginBottom:0}}>P&L Calendar — Daily Portfolio Change</div>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <button onClick={()=>calNav(-1)} style={{background:isLight?'#fff':isDark?'#111':'#1a2235',border:`1px solid ${isLight?'#dde':'#2a3348'}`,color:isLight?'#b8921e':'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>‹</button>
+            <button onClick={()=>calNav(-1)} style={{background:isLight?'#fff':isDark?'#111':'#1a2235',border:`1px solid ${isDark?'#222':'#2a3348'}`,color:isLight?'#b8921e':'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>‹</button>
             <span id="ins-cal-label" style={{fontSize:13,fontWeight:700,color:'#e0e8ff',minWidth:90,textAlign:'center'}}>{months[calMonth]} {calYear}</span>
-            <button onClick={()=>calNav(1)} style={{background:isLight?'#fff':isDark?'#111':'#1a2235',border:`1px solid ${isLight?'#dde':'#2a3348'}`,color:isLight?'#b8921e':'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>›</button>
+            <button onClick={()=>calNav(1)} style={{background:isLight?'#fff':isDark?'#111':'#1a2235',border:`1px solid ${isDark?'#222':'#2a3348'}`,color:isLight?'#b8921e':'#c9a84c',width:26,height:26,borderRadius:5,cursor:'pointer',fontSize:14}}>›</button>
+            <select value={calFund} onChange={e=>setCalFund(e.target.value)} style={{background:isDark?'#111':'#1a2235',border:`1px solid ${isDark?'#222':'#2a3348'}`,color:'#c9a84c',padding:'4px 8px',borderRadius:6,fontSize:11,outline:'none',cursor:'pointer'}}>
+              <option value="ALL">All Funds</option>
+              {keys.map(k=><option key={k} value={k}>{k}</option>)}
+            </select>
           </div>
         </div>
         <div id="ins-cal-body">{renderCalendar()}</div>
@@ -239,13 +284,19 @@ export default function Insights() {
         <div className="cc" style={{marginBottom:0}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
             <div className="cct" style={{marginBottom:0}}>Monthly Summary</div>
-            <select id="ins-cal-year" value={selYear} onChange={e=>{setSelYear(parseInt(e.target.value));}} style={{background:'#1a2235',border:'1px solid #2a3348',color:'#c9a84c',padding:'4px 8px',borderRadius:6,fontSize:11,outline:'none'}}>
-              {Array.from({length:now.getFullYear()-startYr+1},(_,i)=>now.getFullYear()-i).map(y=><option key={y} value={y}>{y}</option>)}
-            </select>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <select id="ins-cal-year" value={selYear} onChange={e=>{setSelYear(parseInt(e.target.value));}} style={{background:isDark?'#111':'#1a2235',border:`1px solid ${isDark?'#222':'#2a3348'}`,color:'#c9a84c',padding:'4px 8px',borderRadius:6,fontSize:11,outline:'none'}}>
+                {Array.from({length:now.getFullYear()-startYr+1},(_,i)=>now.getFullYear()-i).map(y=><option key={y} value={y}>{y}</option>)}
+              </select>
+              <select value={moFund} onChange={e=>setMoFund(e.target.value)} style={{background:isDark?'#111':'#1a2235',border:`1px solid ${isDark?'#222':'#2a3348'}`,color:'#c9a84c',padding:'4px 8px',borderRadius:6,fontSize:11,outline:'none',cursor:'pointer'}}>
+                <option value="ALL">All Funds</option>
+                {keys.map(k=><option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
           </div>
           <div id="ins-monthly-body">
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,tableLayout:'fixed'}}>
-              <thead><tr style={{borderBottom:'1px solid #2a3348'}}>
+              <thead><tr style={{borderBottom:`1px solid ${isDark?'#222':'#2a3348'}`}}>
                 <th style={{textAlign:'left',padding:'6px 8px',color:'#8899bb',fontSize:10,fontWeight:700}}>MONTH</th>
                 <th style={{textAlign:'right',padding:'6px 8px',color:'#8899bb',fontSize:10,fontWeight:700}}>INVESTED</th>
                 <th style={{textAlign:'right',padding:'6px 8px',color:'#8899bb',fontSize:10,fontWeight:700}}>REDEEMED</th>
@@ -260,7 +311,7 @@ export default function Insights() {
                   const isBest=bestM&&mo.m===bestM.m,isWorst=worstM&&mo.m===worstM.m;
                   const rowBg=isBest?'rgba(52,211,153,0.06)':isWorst?'rgba(248,113,113,0.06)':'';
                   return(
-                    <tr key={mo.m} style={{borderBottom:'1px solid #1a2235',background:rowBg}}>
+                    <tr key={mo.m} style={{borderBottom:`1px solid ${isDark?'#111':'#1a2235'}`,background:rowBg}}>
                       <td style={{padding:'5px 8px',color:'#d0d8f0',fontWeight:mo.isCurrent?700:500}}>
                         {mo.label}
                         {mo.isCurrent&&<span style={{fontSize:9,color:'#c9a84c',marginLeft:4}}>(now)</span>}
@@ -283,7 +334,7 @@ export default function Insights() {
         <div className="cc" style={{marginBottom:0,display:'flex',flexDirection:'column'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
             <div className="cct" style={{marginBottom:0}}>Quarterly</div>
-            <select id="ins-cal-fund" value={qCalFund} onChange={e=>setQCalFund(e.target.value)} style={{background:'#1a2235',border:'1px solid #2a3348',color:'#c9a84c',padding:'4px 8px',borderRadius:6,fontSize:11,outline:'none',cursor:'pointer'}}>
+            <select id="ins-cal-fund" value={qCalFund} onChange={e=>setQCalFund(e.target.value)} style={{background:isDark?'#111':'#1a2235',border:`1px solid ${isDark?'#222':'#2a3348'}`,color:'#c9a84c',padding:'4px 8px',borderRadius:6,fontSize:11,outline:'none',cursor:'pointer'}}>
               <option value="ALL">All</option>
               {keys.map(k=><option key={k} value={k}>{k}</option>)}
             </select>

@@ -201,7 +201,7 @@ export default function QuarterlyCalendar({ keys, db, amtHidden, compact=false }
                     // Border: within-year best/worst (exact HTML)
                     const isYearBest  = qk===yearBestQk;
                     const isYearWorst = qk===yearWorstQk;
-                    let border='1px solid #2a3348', boxShadow='';
+                    let border=`1px solid ${isDark?'#222':'#2a3348'}`, boxShadow='';
                     if(isYearBest) { border='2px solid #34d399'; boxShadow='0 0 5px rgba(52,211,153,0.35)'; }
                     else if(isYearWorst){ border='2px solid #f87171'; boxShadow='0 0 5px rgba(248,113,113,0.35)'; }
 
@@ -251,6 +251,7 @@ export default function QuarterlyCalendar({ keys, db, amtHidden, compact=false }
           </tbody>
         </table>
       </div>
+
     </div>
   );
 }

@@ -12,6 +12,14 @@ export default function Sidebar() {
   const [theme, setTheme] = React.useState(()=>{ const t=localStorage.getItem('mft_theme')||'dark'; return t==='light'?'dark':t; });
   const [showSettings, setShowSettings] = React.useState(false);
   React.useEffect(()=>{
+    if(!showSettings)return;
+    const handler=(e)=>{
+      if(!e.target.closest('#main-sidebar'))setShowSettings(false);
+    };
+    document.addEventListener('mousedown',handler);
+    return()=>document.removeEventListener('mousedown',handler);
+  },[showSettings]);
+  React.useEffect(()=>{
     if(theme==='off') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('mft_theme', theme);
@@ -23,6 +31,7 @@ export default function Sidebar() {
   const db = useAppStore(s => s.db);
   const [showManage, setShowManage] = useState(false);
   const [showAddFund, setShowAddFund] = useState(false);
+  const [showAddFundDirect, setShowAddFundDirect] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const funds = Object.keys(MF_FUNDS);
   const importInputRef = useRef(null);
@@ -131,64 +140,82 @@ export default function Sidebar() {
             </button>
           ))}
         </div>
-        <div className="sidebar-footer">
-          <button className="dl-btn" onClick={()=>setShowSettings(true)}
-            style={{color:'#c9a84c',borderColor:'#c9a84c',background:'#2a2010',fontSize:12,fontWeight:700,letterSpacing:'0.3px'}}>
-            ⚙ Settings
-          </button>
-          <div className="sver">mfapi.in · AMFI data · v2.1</div>
-        </div>
-      </div>
-      <input ref={importInputRef} type="file" accept=".json" style={{display:'none'}} onChange={handleFileSelected}/>
-      {showSettings&&(
-        <div className="mbg open" onClick={e=>{if(e.target===e.currentTarget)setShowSettings(false);}}>
-          <div className="modal" style={{width:320,padding:20}}>
-            <div className="mh" style={{marginBottom:16}}>
-              <div className="mt">⚙ Settings</div>
-              <button className="mc2" onClick={()=>setShowSettings(false)}>✕</button>
-            </div>
-            {/* Theme */}
-            <div style={{marginBottom:14}}>
+        <div className="sidebar-footer" style={{padding:0}}>
+          {/* Inline animated settings list */}
+          <div style={{
+            overflow:'hidden',
+            maxHeight:showSettings?'380px':'0',
+            opacity:showSettings?1:0,
+            transition:'max-height 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s ease',
+          }}>
+            <div style={{padding:'6px 8px 4px'}}>
+              {/* Theme */}
               <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Theme</div>
-              <div style={{display:'flex',gap:4}}>
-                {[['dark','🌙 Dark'],['off','⊙ Off']].map(([t,label])=>(
+              <div style={{display:'flex',gap:4,marginBottom:10}}>
+                {[['dark','🌙 Dark'],['off','⚙ Off']].map(([t,label],i)=>(
                   <button key={t} onClick={()=>setTheme(t)} style={{
-                    flex:1,padding:'7px 4px',borderRadius:7,cursor:'pointer',
-                    fontSize:11,fontWeight:700,
+                    flex:1,padding:'7px 4px',borderRadius:7,cursor:'pointer',fontSize:11,fontWeight:700,
                     background:theme===t?'#2a2010':'transparent',
                     color:theme===t?'#c9a84c':'#6b7a9a',
-                    border:'1px solid '+(theme===t?'#c9a84c':'#2a3348'),
+                    border:'1px solid '+(theme===t?'#c9a84c':'#333'),
+                    transform:showSettings?'translateY(0)':'translateY(8px)',
+                    opacity:showSettings?1:0,
+                    transition:`transform 0.35s cubic-bezier(0.34,1.56,0.64,1) ${0.03+i*0.05}s,opacity 0.3s ease ${0.03+i*0.05}s,background 0.15s`,
                   }}>{label}</button>
                 ))}
               </div>
-            </div>
-            <hr className="divider"/>
-            {/* Fund Management */}
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Funds</div>
-              <button className="dl-btn" onClick={()=>{setShowSettings(false);setShowManage(true);}}
-                style={{color:'#c9a84c',borderColor:'#3a3010',background:'#2a2010',marginBottom:6}}>⚙ Manage Funds</button>
-              <button className="dl-btn" onClick={()=>{setShowSettings(false);setShowImport(true);}}
-                style={{color:'#7ab8ff',borderColor:'#1a2f50',background:'#101d30'}}>⬆ Import Statement</button>
-            </div>
-            <hr className="divider"/>
-            {/* Data */}
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Data</div>
-              <div style={{display:'flex',gap:6,marginBottom:6}}>
-                <button className="dl-btn" onClick={()=>{setShowSettings(false);handleExportJSON();}}
-                  style={{color:'#34d399',borderColor:'#1a3020',background:'#0d1f14',flex:1}}>⬇ Save Data</button>
-                <button className="dl-btn" onClick={()=>{setShowSettings(false);handleImportJSON();}}
-                  style={{color:'#f97316',borderColor:'#2a1a08',background:'#1a1008',flex:1}}>⬆ Load Data</button>
+              <hr style={{border:'none',borderTop:'1px solid #333',margin:'0 0 8px'}}/>
+              {/* Funds */}
+              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Funds</div>
+              {[
+                {label:'➕ Add Fund',color:'#34d399',bc:'#1a3020',bg:'#0d1f14',delay:0.08,action:()=>{setShowSettings(false);setShowAddFundDirect(true);}},
+                {label:'⚙ Manage Funds',color:'#c9a84c',bc:'#3a3010',bg:'#2a2010',delay:0.13,action:()=>{setShowSettings(false);setShowManage(true);}},
+                {label:'⬆ Import Statement',color:'#a78bfa',bc:'#2d1f5a',bg:'#1a1035',delay:0.18,action:()=>{setShowSettings(false);setShowImport(true);}},
+              ].map((item,i)=>(
+                <button key={i} onClick={item.action} style={{
+                  color:item.color,borderColor:item.bc,background:item.bg,
+                  marginBottom:6,width:'100%',padding:'8px',borderRadius:7,cursor:'pointer',
+                  fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',gap:5,
+                  border:`1px solid ${item.bc}`,transition:'all 0.15s',
+                  transform:showSettings?'translateY(0)':'translateY(8px)',
+                  opacity:showSettings?1:0,
+                }}>{item.label}</button>
+              ))}
+              <hr style={{border:'none',borderTop:'1px solid #333',margin:'0 0 8px'}}/>
+              {/* Data */}
+              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Data</div>
+              <div style={{
+                display:'flex',gap:6,marginBottom:6,
+                transform:showSettings?'translateY(0)':'translateY(8px)',
+                opacity:showSettings?1:0,
+                transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1) 0.20s,opacity 0.3s ease 0.20s',
+              }}>
+                <button onClick={()=>{setShowSettings(false);handleExportJSON();}} style={{color:'#34d399',border:'1px solid #1a3020',background:'#0d1f14',flex:1,padding:'8px',borderRadius:7,cursor:'pointer',fontSize:11}}>⬇ Save Data</button>
+                <button onClick={()=>{setShowSettings(false);handleImportJSON();}} style={{color:'#f97316',border:'1px solid #2a1a08',background:'#1a1008',flex:1,padding:'8px',borderRadius:7,cursor:'pointer',fontSize:11}}>⬆ Load Data</button>
               </div>
-              <button className="dl-btn" onClick={()=>{setShowSettings(false);exportPDF(db,MF_FUNDS);}}
-                style={{color:'#7ab8ff',borderColor:'#1a2f50',background:'#101d30'}}>⬇ Export PDF</button>
+              <button onClick={()=>{setShowSettings(false);exportPDF(db,MF_FUNDS);}} style={{
+                color:'#06b6d4',border:'1px solid #0e3540',background:'#071e24',width:'100%',padding:'8px',borderRadius:7,cursor:'pointer',fontSize:11,
+                transform:showSettings?'translateY(0)':'translateY(8px)',
+                opacity:showSettings?1:0,
+                transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1) 0.25s,opacity 0.3s ease 0.25s',
+              }}><svg width='13' height='13' viewBox='0 0 14 14' fill='none' style={{flexShrink:0}}><rect x='2' y='1' width='8' height='11' rx='1' stroke='#06b6d4' strokeWidth='1.2'/><path d='M5 1v3h5' stroke='#06b6d4' strokeWidth='1.2' strokeLinejoin='round'/><text x='4' y='10' fontSize='4' fontWeight='700' fill='#06b6d4'>PDF</text></svg> Export PDF</button>
             </div>
           </div>
+          {/* Settings button */}
+          <div style={{padding:'8px 10px'}}>
+            <button className="dl-btn" onClick={()=>setShowSettings(v=>!v)}
+              style={{color:'#c9a84c',borderColor:'#c9a84c',background:'#2a2010',fontSize:12,fontWeight:700,letterSpacing:'0.3px'}}>
+              ⚙ Settings
+            </button>
+            <div className="sver">React · v1.0</div>
+          </div>
         </div>
-      )}
+      </div>
+      <input ref={importInputRef} type="file" accept=".json" style={{display:'none'}} onChange={handleFileSelected}/>
+      
       {showManage&&<ManageFundsModal onClose={()=>setShowManage(false)} onAddNew={()=>setShowAddFund(true)}/>}
-      {showAddFund&&<AddFundModal onClose={()=>setShowAddFund(false)} onBack={()=>{setShowAddFund(false);setShowManage(true);}}/>}
+      {showAddFund&&<AddFundModal onClose={()=>setShowAddFund(false)} onBack={()=>{setShowAddFund(false);setShowManage(true);}}/>
+      }{showAddFundDirect&&<AddFundModal onClose={()=>setShowAddFundDirect(false)}/>}
       {showImport&&<ImportModal onClose={()=>setShowImport(false)}/>}
     </>
   );

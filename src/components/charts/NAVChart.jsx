@@ -29,7 +29,6 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
   useEffect(()=>{hideRef.current=v=>amtHidden?'••••':v;},[amtHidden]);
   const dbRef=useRef(db);
   useEffect(()=>{dbRef.current=db;},[db]);
-  // Track if user has manually changed TF — if not, show 52W hi/lo (exact HTML)
   const userChangedTFRef=useRef(false);
 
   const build=useCallback(()=>{
@@ -62,7 +61,6 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
       d1El.style.color=up2?'#34d399':'#f87171';
     }
 
-    // Thin labels
     let finalLabels=filtered.map(d=>fmtDate(d.dateStr));
     let finalNavVals=filtered.map(d=>d.nav);
     if(finalLabels.length>500){
@@ -72,7 +70,6 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
     }
     const labelIndexMap={};finalLabels.forEach((l,i)=>labelIndexMap[l]=i);
 
-    // TX scatter dots — EXACT HTML approach with pointHoverRadius:12 for grow-on-hover
     const txMap={};txs.forEach(tx=>{if(tx.date){if(!txMap[tx.date])txMap[tx.date]=[];txMap[tx.date].push(tx);}});
     const filteredStart=filtered[0].dateStr,filteredEnd=filtered[filtered.length-1].dateStr;
     const dots=[];
@@ -88,8 +85,7 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
       dots.push({x:finalLabels[labelIdx],y:matchDate.nav,_amt:a,_units:u,_nav:matchDate.nav,_date:txDate,_type:dayTxs[0].type});
     });
 
-    // Avg NAV plugin
-    const avgLabelPlugin={id:'avgLabel',afterDraw(chart){
+    const avgLabelPlugin={id:'avgLabel',beforeDatasetsDraw(chart){
       if(!avgNav||avgNav<=0)return;
       const{ctx:c3,chartArea:{left,right},scales}=chart;
       const yPos=scales.y.getPixelForValue(avgNav);
@@ -97,26 +93,24 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
       c3.save();c3.beginPath();c3.strokeStyle='#c9a84c';c3.lineWidth=1.5;c3.setLineDash([4,4]);
       c3.moveTo(left,yPos);c3.lineTo(right,yPos);c3.stroke();c3.setLineDash([]);
       const lbl='₹'+avgNav.toFixed(2);c3.font='bold 10px Segoe UI,system-ui,sans-serif';
-      const tw=c3.measureText(lbl).width,pad=5,bw=tw+pad*2,bh=18,mx=(left+right)/2;
+      const tw=c3.measureText(lbl).width,pad=5,bw=tw+pad*2,bh=18,bx=left+4;
       c3.fillStyle='rgba(26,34,53,0.85)';c3.strokeStyle='#c9a84c';c3.lineWidth=1;
-      c3.beginPath();c3.roundRect(mx-bw/2,yPos-bh-4,bw,bh,4);c3.fill();c3.stroke();
+      c3.beginPath();c3.roundRect(bx,yPos-bh-4,bw,bh,4);c3.fill();c3.stroke();
       c3.fillStyle='#c9a84c';c3.textAlign='center';c3.textBaseline='middle';
-      c3.fillText(lbl,mx,yPos-bh/2-4);c3.restore();
+      c3.fillText(lbl,bx+bw/2,yPos-bh/2-4);c3.restore();
     }};
 
     if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}
     const ctx=chartRef.current;if(!ctx)return;
-
     const ctx2d=ctx?.getContext('2d');if(!ctx2d)return;
+
     chartInst.current=new window.Chart(ctx2d,{
       type:'line',
       data:{labels:finalLabels,datasets:[
-        // NAV line — PVC-style: hover anywhere shows tooltip
         {label:'NAV',data:finalNavVals,borderColor:lineColor,backgroundColor:fillColor,
          borderWidth:2,pointRadius:0,pointHoverRadius:5,
-         pointHoverBackgroundColor:'#7ab8ff',pointHoverBorderColor:'#ffffff',pointHoverBorderWidth:2,
+         pointHoverBackgroundColor:lineColor,pointHoverBorderColor:lineColor,pointHoverBorderWidth:0,
          tension:0.3,fill:true,order:2},
-        // TX dots — scatter with grow-on-hover (exact HTML: pointRadius:8, pointHoverRadius:12)
         {label:'Tx',data:dots,type:'scatter',parsing:{xAxisKey:'x',yAxisKey:'y'},
          pointRadius:dots.map(()=>8),
          pointHoverRadius:12,
@@ -127,27 +121,37 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
          showLine:false,order:1}
       ]},
       options:{responsive:true,maintainAspectRatio:false,
-        // Exact HTML: nearest+intersect:true — tooltip only on direct hover
         interaction:{mode:'nearest',intersect:true},
         plugins:{legend:{display:false},
           tooltip:{
-            backgroundColor:'#1a2235',titleColor:'#e0e8ff',bodyColor:'#c0ccdc',
-            borderColor:'#3a4560',borderWidth:1,padding:10,cornerRadius:8,displayColors:false,
+            backgroundColor:()=>document.documentElement.getAttribute('data-theme')==='dark'?'#111':'#1a2235',
+            borderColor:(ctx)=>{
+              const items=ctx.tooltip?.dataPoints;
+              if(items&&items[0]?.datasetIndex===1)return'#c9a84c';
+              return lineColor;
+            },
+            borderWidth:1,
+            titleColor:'#ffffff',
+            bodyColor:lineColor,
+            padding:10,cornerRadius:8,displayColors:false,
+            titleFont:{size:13,weight:'bold'},
+            bodyFont:{size:12,weight:'bold'},
             callbacks:{
               title:(items)=>{
-                // If tx dot hovered (nearest), show tx date; else show label date
                 const txItem=items.find(i=>i.datasetIndex===1);
                 if(txItem){const pt=dots[txItem.dataIndex];if(pt){const p=pt._date.split('-');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:pt._date;}}
                 const n=items.find(i=>i.datasetIndex===0);return n?n.label:'';
               },
               label:(item)=>{
                 if(item.datasetIndex===0)return'NAV: ₹'+parseFloat(item.raw).toFixed(2);
-                // For tx dot: show NAV at that date (exact HTML line 1763-1764)
                 const pt=dots[item.dataIndex];
                 if(pt&&pt._nav!=null)return'NAV: ₹'+parseFloat(pt._nav).toFixed(2);
                 return null;
               },
-              filter:(item)=>item.datasetIndex===0
+              filter:(item,data)=>{
+                if(data.length>1)return item.datasetIndex===0;
+                return true;
+              }
             }
           }
         },
@@ -157,7 +161,6 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
         },
         onHover:(evt,elements)=>{
           const infoEl=hoverRef.current;if(!infoEl)return;
-          // Check if hovering a tx dot
           const txEl=elements.find(e=>e.datasetIndex===1);
           if(txEl){
             const pt=dots[txEl.index];
@@ -179,19 +182,14 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
       plugins:[avgLabelPlugin,drawLinePlugin]
     });
 
-    // Hi/Lo — exact HTML:
-    // Page open (user hasn't changed TF): show 52W High/Low from full year history
-    // After user manually switches TF: show TF High/Low from filtered data
     const hiEl=document.getElementById('nav-high-'+fundKey);
     const loEl=document.getElementById('nav-low-'+fundKey);
     if(hiEl&&loEl&&filtered.length){
       const hi=Math.max(...filtered.map(d=>d.nav));
       const lo=Math.min(...filtered.map(d=>d.nav));
       const tfLabel=tf==='All'?'All':tf;
-      // Default: TF hi/lo
       hiEl.innerHTML='<span style="color:#6b7a9a">'+tfLabel+' High:</span> <span style="color:#34d399;font-weight:600">₹'+hi.toFixed(2)+'</span>';
       loEl.innerHTML='<span style="color:#6b7a9a">'+tfLabel+' Low:</span> <span style="color:#f87171;font-weight:600">₹'+lo.toFixed(2)+'</span>';
-      // Override with 52W if user hasn't manually changed TF (exact HTML renderFundPage block)
       if(!userChangedTFRef.current){
         const yr52=new Date();yr52.setFullYear(yr52.getFullYear()-1);
         const subset=h.filter(d=>d.date>=yr52);
@@ -205,7 +203,6 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
     }
   },[fundKey,tf,amtHidden]);
 
-  // Rebuild when build fn changes OR when db changes (NAV refresh)
   useEffect(()=>{build();},[build,db]);
   useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[amtHidden]);
 
@@ -232,8 +229,8 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
         <span><span style={{display:'inline-block',width:9,height:9,borderRadius:'50%',background:'#c9a84c',marginRight:4,verticalAlign:'middle'}}></span>Investment</span>
         <span><span style={{display:'inline-block',width:9,height:9,borderRadius:'50%',background:'#f87171',marginRight:4,verticalAlign:'middle'}}></span>Redemption</span>
         <span style={{marginLeft:'auto',display:'flex',gap:10,alignItems:'center'}}>
-          <span id={'nav-low-'+fundKey} style={{fontSize:10,color:'#6b7a9a'}}></span>
           <span id={'nav-high-'+fundKey} style={{fontSize:10,color:'#6b7a9a'}}></span>
+          <span id={'nav-low-'+fundKey} style={{fontSize:10,color:'#6b7a9a'}}></span>
         </span>
       </div>
     </div>

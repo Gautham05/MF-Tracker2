@@ -171,10 +171,10 @@ export default function AddFundModal({ onClose, onBack }) {
             <div id="af-search-status" className="nfs" style={{color:searchStatusColor}}>{searchStatus}</div>
           </div>
           {showResults&&results.length>0&&(
-            <div id="af-results" style={{maxHeight:220,overflowY:'auto',marginBottom:10,border:'1px solid #2a3348',borderRadius:8,scrollbarWidth:'none',msOverflowStyle:'none'}}>
+            <div id="af-results" style={{maxHeight:220,overflowY:'auto',marginBottom:10,border:`1px solid ${isDark?'#222':'#2a3348'}`,borderRadius:8,scrollbarWidth:'none',msOverflowStyle:'none'}}>
               {results.map((f,i)=>(
                 <div key={i} onClick={()=>selectFund(f)}
-                  style={{padding:'9px 12px',cursor:'pointer',borderBottom:'1px solid #1e2840',fontSize:12,color:'#d0d8f0',transition:'background 0.1s'}}
+                  style={{padding:'9px 12px',cursor:'pointer',borderBottom:`1px solid ${isDark?'#1e1e1e':'#1e2840'}`,fontSize:12,color:'#d0d8f0',transition:'background 0.1s'}}
                   onMouseEnter={e=>e.currentTarget.style.background=isDark?'#1a1a1a':'#1e2840'}
                   onMouseLeave={e=>e.currentTarget.style.background='none'}>
                   <div style={{fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.schemeName}</div>
@@ -186,7 +186,7 @@ export default function AddFundModal({ onClose, onBack }) {
         </div>
 
         {/* FIXED BOTTOM: selected info + key/ter/color + buttons — ALWAYS VISIBLE */}
-        <div style={{flexShrink:0,borderTop:'1px solid #2a3348',padding:'10px 4px 4px'}}>
+        <div style={{flexShrink:0,borderTop:`1px solid ${isDark?'#222':'#2a3348'}`,padding:'10px 4px 4px'}}>
           {/* Selected fund info box — shown when fund selected */}
           <div id="af-selected-info" style={{display:selected?'block':'block',background:isDark?'#141414':'#162238',border:`1px solid ${isDark?'#222':'#1e3a5f'}`,borderRadius:8,padding:10,marginBottom:8,height:90,overflow:'hidden',boxSizing:'border-box'}}>
             {selected
