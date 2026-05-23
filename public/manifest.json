@@ -1,0 +1,13 @@
+{
+  "name": "Mutual Fund Tracker",
+  "short_name": "MF Tracker",
+  "description": "Track your mutual fund portfolio",
+  "start_url": "/MF-Tracker/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/MF-Tracker/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/MF-Tracker/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
