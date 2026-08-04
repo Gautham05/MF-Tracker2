@@ -4,13 +4,21 @@ import { MF_FUNDS } from '../../constants/funds.js';
 import ManageFundsModal from '../modals/ManageFundsModal.jsx';
 import AddFundModal from '../modals/AddFundModal.jsx';
 import ImportModal from '../modals/ImportModal.jsx';
+import SupaLoginModal from '../modals/SupaLoginModal.jsx';
 import { exportPDF } from '../../services/pdfExport.js';
-import { appAlert, appConfirm } from '../ui/ConfirmDialog.jsx';
+import { appAlert, appConfirm, appUpdateDialog, appOpenProgress, appCloseDialog, wasDialogCancelled, resetDialogCancel } from '../ui/ConfirmDialog.jsx';
+import { isLoggedIn, clearSupaCreds } from '../../store/supabase.js';
 
 export default function Sidebar() {
   // Theme: 'dark' | 'light' | 'off' — default 'dark', persisted in localStorage
-  const [theme, setTheme] = React.useState(()=>{ const t=localStorage.getItem('mft_theme')||'dark'; return t==='light'?'dark':t; });
+  const [theme, setTheme] = React.useState(()=>{ const t=localStorage.getItem('mft_theme')||'dark'; return (t==='dark'||t==='off')?t:'dark'; });
   const [showSettings, setShowSettings] = React.useState(false);
+  const [showLogin, setShowLogin] = React.useState(false);
+  const [loggedIn, setLoggedIn] = React.useState(isLoggedIn);
+  // Derive colors from current theme so settings panel matches dark/off
+  const sLabelColor = theme==='dark' ? '#555555' : '#6b7a9a';
+  const sDivColor   = theme==='dark' ? '#222222' : '#333333';
+
   React.useEffect(()=>{
     if(!showSettings)return;
     const handler=(e)=>{
@@ -36,17 +44,14 @@ export default function Sidebar() {
   const funds = Object.keys(MF_FUNDS);
   const importInputRef = useRef(null);
 
-  // ── Export: download full localStorage as JSON ──
+  // ── Export: download current db state as JSON ──
   function handleExportJSON() {
     try {
-      const raw = localStorage.getItem('mf_manage_v2.0');
-      if (!raw) { appAlert('No data found to export.', {variant:'alert-warn'}).then(()=>{}); return; }
-      const full = JSON.parse(raw);
-      // Export ONLY mf (transactions) and customFunds (fund definitions)
-      // Everything else (navData, navHistory, navDate) is refreshed via Refresh NAV
-      const exportData = { mf: full.mf || {}, customFunds: full.customFunds || [] };
+      const db = useAppStore.getState().db;
+      const exportData = { mf: db.mf || {}, customFunds: db.customFunds || [] };
       const fundCount = exportData.customFunds.length;
       const txCount = Object.values(exportData.mf).reduce((s,f)=>s+(f.transactions?.length||0),0);
+      if (!fundCount && !txCount) { appAlert('No data found to export.', {variant:'alert-warn'}).then(()=>{}); return; }
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -87,7 +92,7 @@ export default function Sidebar() {
           'Import backup file "' + file.name + '"?\n\n' +
           fundCount + ' fund' + (fundCount!==1?'s':'') + ', ' +
           txCount + ' transaction' + (txCount!==1?'s':'') + '\n\n' +
-          '⚠ This will REPLACE all current data.\nMake sure you have a backup first.',
+          '⚠ Existing transactions for these funds will be deleted and replaced with data from this file.',
           { variant:'alert-warn', confirmLabel:'Import & Replace', cancelLabel:'Cancel' }
         );
         if (!ok) return;
@@ -96,15 +101,18 @@ export default function Sidebar() {
         const invalidFunds = [];
         const validFunds = [];
         if (funds.length > 0) {
-          appAlert('Validating fund codes with AMFI...', {variant:'alert', confirmLabel:'OK'});
+          // Show non-closeable validating dialog with only Cancel
+          resetDialogCancel();
+          appOpenProgress('Validating fund codes with mfapi...', {variant:'alert', confirmLabel:'', cancelLabel:'Cancel'});
           for (const f of funds) {
+            if (wasDialogCancelled()) break; // user clicked Cancel — stop validation
             const code = f.data?.code || f.code;
             if (!code) { invalidFunds.push(`${f.key}: no scheme code`); continue; }
             try {
               const r = await fetch(`https://api.mfapi.in/mf/${code}`);
               const j = await r.json();
               if (j.data && j.data.length && j.meta?.scheme_name) {
-                validFunds.push({ f, schemeName: j.meta.scheme_name });
+                validFunds.push({ f, schemeName: j.meta.scheme_name, navData: j.data, navMeta: j.meta });
               } else {
                 invalidFunds.push(`${f.key} (code ${code}): not found in AMFI`);
               }
@@ -112,6 +120,8 @@ export default function Sidebar() {
               invalidFunds.push(`${f.key} (code ${code}): network error`);
             }
           }
+          appCloseDialog();
+          if (wasDialogCancelled()) return; // cancelled — stop entire import
         }
         if (invalidFunds.length > 0) {
           if (validFunds.length === 0) {
@@ -125,38 +135,65 @@ export default function Sidebar() {
           );
           if (!skip) return;
         }
-        // Show final confirmation with validated fund list
-        const validList = validFunds.map(v => `✓ ${v.f.key}: ${v.schemeName}`).join('\n');
+        // Show final confirmation
+        const validList = validFunds.map(v => `✓ ${v.f.key} - ${v.f.data?.code||v.f.code}: ${v.schemeName}`).join('\n');
         const finalOk = await appConfirm(
-          'Ready to import ' + validFunds.length + ' fund' + (validFunds.length!==1?'s':'') + ':\n\n' + validList +
-          '\n\n⚠ This will REPLACE all current data.',
+          'Ready to import ' + validFunds.length + ' fund' + (validFunds.length!==1?'s':'') + ':\n\n' + validList + '\n\n⚠ Existing transactions for these funds will be wiped and replaced.',
           {variant:'alert-warn', confirmLabel:'Import & Replace', cancelLabel:'Cancel'}
         );
         if (!finalOk) return;
-        // Build clean data with only valid funds
-        const validKeys = new Set(validFunds.map(v => v.f.key));
-        const cleanMF = {};
-        Object.entries(data.mf || {}).forEach(([k,v]) => { if(validKeys.has(k)) cleanMF[k] = v; });
-        const clean = {
-          mf: cleanMF,
-          customFunds: validFunds.map(v => v.f),
-          navData: {},
-          navHistory: {},
-          navDate: '',
-        };
-        localStorage.setItem('mf_manage_v2.0', JSON.stringify(clean));
-        const importedFundCount = Object.keys(cleanMF).length;
-        const importedTxCount = Object.values(cleanMF).reduce((s,f)=>s+(f.transactions?.length||0),0);
-        appAlert(
-          '✓ Data imported successfully!\n\n' +
-          importedFundCount + ' fund' + (importedFundCount!==1?'s':'') + ' and ' +
-          importedTxCount + ' transaction' + (importedTxCount!==1?'s':'') + ' restored.\n\n' +
-          'The page will reload — then click Refresh NAV to load names and chart data.',
-          {variant:'alert', confirmLabel:'Reload Now'}
-        ).then(()=>{
-          localStorage.setItem('mft_auto_nav', '1');
-          window.location.reload();
-        });
+        // Disable buttons and show progress while importing
+        // Open progress dialog for import — non-closeable, shows fund count
+        appOpenProgress('Importing funds into database...\nPlease wait.', {variant:'alert', confirmLabel:'', cancelLabel:'Cancel', cancelDisabled:true});
+        // Import each valid fund + its transactions via store actions (silent — no re-renders)
+        const { addFund, saveTx, initDB } = useAppStore.getState();
+        const { dbDeleteAllTxForFund } = await import('../../store/db.js');
+        const { parseMFData, buildStandardFullName, normalizeFundCategory } = await import('../../constants/funds.js');
+        let importedFunds = 0, importedTx = 0;
+        for (const { f, navData, navMeta } of validFunds) {
+          const key = f.key;
+          const fundData = f.data || {};
+          // Build nav entries
+          const parsed = parseMFData(navData);
+          const navHistArr = parsed.map(d=>({dateStr:d.dateStr,nav:d.nav}));
+          const navDataEntry = navData.length ? {nav:parseFloat(navData[0].nav),date:navData[0].date} : null;
+          // Normalise names
+          const fn = buildStandardFullName(fundData.fullName||fundData.name||navMeta?.scheme_name||'');
+          let sn = fn.replace(/\s*-\s*Direct Plan\s*-\s*Growth$/,'').replace(/\s*-\s*Regular Plan\s*-\s*Growth$/,' (Reg)')
+            .replace(/\s*-\s*Direct Plan\s*-\s*IDCW$/,' IDCW').replace(/\s*-\s*Regular Plan\s*-\s*IDCW$/,' IDCW (Reg)')
+            .replace(/\s*Fund$/,'').replace(/\s+/g,' ').trim();
+          if(/Regular Plan/i.test(fn)&&!/IDCW/i.test(fn)&&!sn.endsWith(' (Reg)'))sn+=' (Reg)';
+          if(sn.length>32)sn=sn.slice(0,30)+'\u2026';
+          const cat = normalizeFundCategory(navMeta?.scheme_category||fundData.category||'', fn);
+          const cleanFundData = {
+            name: sn, fullName: fn,
+            code: String(fundData.code),
+            color: fundData.color||'#c9a84c',
+            ter: fundData.ter||0,
+            category: cat||fundData.category||'',
+            amcName: navMeta?.fund_house||fundData.amcName||'',
+          };
+          appUpdateDialog({ message:`Importing fund ${importedFunds+1}/${validFunds.length}: ${key}...\nPlease wait.` });
+          await addFund(key, cleanFundData, navDataEntry, navHistArr, true); // silent
+          importedFunds++;
+          // Wipe existing transactions for this fund by scheme code, then insert fresh
+          // Matches by fund_code (scheme code) not short key — handles renamed funds correctly
+          await dbDeleteAllTxForFund(String(fundData.code));
+          const txList = data.mf?.[key]?.transactions || [];
+          for (const tx of txList) {
+            await saveTx(key, { date:tx.date, type:tx.type, amount:tx.amount, stamp:tx.stamp||'0', units:tx.units, nav:tx.nav }, null, true); // silent
+            importedTx++;
+          }
+        }
+        // Close progress dialog, show success
+        appCloseDialog();
+        await appAlert(
+          '✓ Import complete!\n\n' + importedFunds + ' fund' + (importedFunds!==1?'s':'') + ' and ' + importedTx + ' transaction' + (importedTx!==1?'s':'') + ' imported.\n\nClick OK to reload.',
+          {variant:'alert', confirmLabel:'OK'}
+        );
+        // Reload page — cleanest way to re-run initDB from scratch after bulk import
+        localStorage.setItem('mft_auto_nav', '1');
+        window.location.reload();
       } catch(err) {
         appAlert('Import failed: ' + err.message + '\n\nMake sure you selected a valid MF Tracker backup file.', {variant:'alert-warn'}).then(()=>{});
       }
@@ -179,39 +216,42 @@ export default function Sidebar() {
           </button>
           {funds.length>0&&<div className="slabel" style={{marginTop:6}}>Funds</div>}
           {funds.map(k=>(
-            <button key={k} className={`nav-btn${currentPage===k?' active':''}`} onClick={()=>setPage(k)}>
-              <span className="nicon" style={{color:MF_FUNDS[k]?.color||'#c9a84c'}}>◈</span>
-              <span>{k}<span className="nsub">{MF_FUNDS[k]?.name||k}</span></span>
-            </button>
+            <div key={k} style={{display:'flex',alignItems:'center',gap:0}}>
+              <button className={`nav-btn${currentPage===k?' active':''}`} style={{flex:1,minWidth:0}} onClick={()=>setPage(k)}>
+                <span className="nicon" style={{color:MF_FUNDS[k]?.color||'#c9a84c'}}>◈</span>
+                <span>{k}<span className="nsub">{MF_FUNDS[k]?.name||k}</span></span>
+              </button>
+              <button title="Holdings" onClick={(e)=>{e.stopPropagation();setPage('Holdings:'+k);}} style={{background:'none',border:'none',cursor:'pointer',color:currentPage===('Holdings:'+k)?'#c9a84c':'#4a5570',padding:'4px 6px',fontSize:11,flexShrink:0,transition:'color 0.15s'}}>⊞</button>
+            </div>
           ))}
         </div>
         <div className="sidebar-footer" style={{padding:0}}>
           {/* Inline animated settings list */}
           <div style={{
             overflow:'hidden',
-            maxHeight:showSettings?'380px':'0',
+            maxHeight:showSettings?'480px':'0',
             opacity:showSettings?1:0,
             transition:'max-height 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s ease',
           }}>
             <div style={{padding:'6px 8px 4px'}}>
               {/* Theme */}
-              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Theme</div>
+              <div style={{fontSize:10,fontWeight:700,color:sLabelColor,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Theme</div>
               <div style={{display:'flex',gap:4,marginBottom:10}}>
                 {[['dark','🌙 Dark'],['off','⚙ Off']].map(([t,label],i)=>(
                   <button key={t} onClick={()=>setTheme(t)} style={{
                     flex:1,padding:'7px 4px',borderRadius:7,cursor:'pointer',fontSize:11,fontWeight:700,
                     background:theme===t?'#2a2010':'transparent',
-                    color:theme===t?'#c9a84c':'#6b7a9a',
-                    border:'1px solid '+(theme===t?'#c9a84c':'#333'),
+                    color:theme===t?'#c9a84c':sLabelColor,
+                    border:'1px solid '+(theme===t?'#c9a84c':sDivColor),
                     transform:showSettings?'translateY(0)':'translateY(8px)',
                     opacity:showSettings?1:0,
                     transition:`transform 0.35s cubic-bezier(0.34,1.56,0.64,1) ${0.03+i*0.05}s,opacity 0.3s ease ${0.03+i*0.05}s,background 0.15s`,
                   }}>{label}</button>
                 ))}
               </div>
-              <hr style={{border:'none',borderTop:'1px solid #333',margin:'0 0 8px'}}/>
+              <hr style={{border:'none',borderTop:'1px solid '+sDivColor,margin:'0 0 8px'}}/>
               {/* Funds */}
-              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Funds</div>
+              <div style={{fontSize:10,fontWeight:700,color:sLabelColor,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Funds</div>
               {[
                 {label:'➕ Add Fund',color:'#34d399',bc:'#1a3020',bg:'#0d1f14',delay:0.08,action:()=>{setShowSettings(false);setShowAddFundDirect(true);}},
                 {label:'⚙ Manage Funds',color:'#c9a84c',bc:'#3a3010',bg:'#2a2010',delay:0.13,action:()=>{setShowSettings(false);setShowManage(true);}},
@@ -226,9 +266,9 @@ export default function Sidebar() {
                   opacity:showSettings?1:0,
                 }}>{item.label}</button>
               ))}
-              <hr style={{border:'none',borderTop:'1px solid #333',margin:'0 0 8px'}}/>
+              <hr style={{border:'none',borderTop:'1px solid '+sDivColor,margin:'0 0 8px'}}/>
               {/* Data */}
-              <div style={{fontSize:10,fontWeight:700,color:'#6b7a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Data</div>
+              <div style={{fontSize:10,fontWeight:700,color:sLabelColor,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Data</div>
               <div style={{
                 display:'flex',gap:6,marginBottom:6,
                 transform:showSettings?'translateY(0)':'translateY(8px)',
@@ -244,6 +284,34 @@ export default function Sidebar() {
                 opacity:showSettings?1:0,
                 transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1) 0.25s,opacity 0.3s ease 0.25s',
               }}><svg width='13' height='13' viewBox='0 0 14 14' fill='none' style={{flexShrink:0}}><rect x='2' y='1' width='8' height='11' rx='1' stroke='#06b6d4' strokeWidth='1.2'/><path d='M5 1v3h5' stroke='#06b6d4' strokeWidth='1.2' strokeLinejoin='round'/><text x='4' y='10' fontSize='4' fontWeight='700' fill='#06b6d4'>PDF</text></svg> Export PDF</button>
+              <hr style={{border:'none',borderTop:'1px solid '+sDivColor,margin:'8px 0 6px'}}/>
+              {/* Database */}
+              <div style={{fontSize:10,fontWeight:700,color:sLabelColor,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Database</div>
+              <button
+                onClick={async()=>{
+                  if(loggedIn){
+                    const ok=await appConfirm('Disconnect from Supabase?\n\nNo data will be deleted. You can reconnect anytime.',{variant:'confirm-generic',confirmLabel:'Disconnect',cancelLabel:'Cancel'});
+                    if(!ok)return;
+                    clearSupaCreds();
+                    setLoggedIn(false);
+                  }else{
+                    setShowSettings(false);
+                    setShowLogin(true);
+                  }
+                }}
+                style={{
+                  color:loggedIn?'#34d399':sLabelColor,
+                  border:loggedIn?'1px solid #1a3020':'1px solid '+sDivColor,
+                  background:loggedIn?'#0d1f14':'transparent',
+                  marginBottom:6,width:'100%',padding:'8px',borderRadius:7,cursor:'pointer',
+                  fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',gap:5,
+                  transition:'all 0.15s',
+                  transform:showSettings?'translateY(0)':'translateY(8px)',
+                  opacity:showSettings?1:0,
+                }}
+              >
+                {loggedIn?'● Connected — Disconnect':'○ Connect Database'}
+              </button>
             </div>
           </div>
           {/* Settings button */}
@@ -252,12 +320,13 @@ export default function Sidebar() {
               style={{color:'#c9a84c',borderColor:'#c9a84c',background:'#2a2010',fontSize:12,fontWeight:700,letterSpacing:'0.3px'}}>
               ⚙ Settings
             </button>
-            <div className="sver">React · v1.0</div>
+            <div className="sver">React · v2.0</div>
           </div>
         </div>
       </div>
       <input ref={importInputRef} type="file" accept=".json" style={{display:'none'}} onChange={handleFileSelected}/>
       
+      {showLogin&&<SupaLoginModal onClose={()=>setShowLogin(false)} onConnected={()=>{setLoggedIn(true);setShowLogin(false);window.location.reload();}}/>}
       {showManage&&<ManageFundsModal onClose={()=>setShowManage(false)} onAddNew={()=>setShowAddFund(true)}/>}
       {showAddFund&&<AddFundModal onClose={()=>setShowAddFund(false)} onBack={()=>{setShowAddFund(false);setShowManage(true);}}/>
       }{showAddFundDirect&&<AddFundModal onClose={()=>setShowAddFundDirect(false)}/>}

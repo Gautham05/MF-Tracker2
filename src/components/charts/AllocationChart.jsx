@@ -16,7 +16,7 @@ const drawLTRPlugin={
     if(p>=1){chart._ltrDone=true;return;}
     const{ctx:c2,canvas}=chart;
     c2.save();c2.beginPath();c2.rect(0,0,canvas.width*p,canvas.height);c2.clip();
-    requestAnimationFrame(()=>chart.draw());
+    if(chart.canvas)requestAnimationFrame(()=>chart.draw());
   },
   afterDraw(chart){if(!chart._ltrDone)chart.ctx.restore();}
 };

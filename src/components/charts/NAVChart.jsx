@@ -12,11 +12,11 @@ const drawLinePlugin={
   beforeDraw(chart){
     if(chart._ltrDone)return;
     const now=performance.now();if(!chart._ltrStart)chart._ltrStart=now;
-    const p=Math.min((now-chart._ltrStart)/900,1);
+    const p=Math.min((now-chart._ltrStart)/500,1);
     if(p>=1){chart._ltrDone=true;return;}
     const{ctx:c2,canvas}=chart;
     c2.save();c2.beginPath();c2.rect(0,0,canvas.width*p,canvas.height);c2.clip();
-    requestAnimationFrame(()=>chart.draw());
+    if(chart.canvas)requestAnimationFrame(()=>chart.draw());
   },
   afterDraw(chart){if(!chart._ltrDone)chart.ctx.restore();}
 };
@@ -157,7 +157,7 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
         },
         scales:{
           x:{type:'category',ticks:{color:'#8899bb',maxTicksLimit:6,font:{size:10}},grid:{display:false},border:{display:false}},
-          y:{ticks:{color:'#8899bb',font:{size:10},callback:v=>'₹'+v},grid:{display:false},border:{display:false}}
+          y:{ticks:{color:'#8899bb',font:{size:10},callback:v=>'₹'+parseFloat(v).toFixed(1)},grid:{display:false},border:{display:false}}
         },
         onHover:(evt,elements)=>{
           const infoEl=hoverRef.current;if(!infoEl)return;
@@ -204,7 +204,7 @@ export default function NAVChart({ fundKey, db, tf, onTFChange, amtHidden }) {
   },[fundKey,tf,amtHidden]);
 
   useEffect(()=>{build();},[build,db]);
-  useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[amtHidden]);
+  useEffect(()=>()=>{if(chartInst.current){chartInst.current.destroy();chartInst.current=null;}},[]);
 
   return(
     <div className="cc" style={{marginBottom:0}}>

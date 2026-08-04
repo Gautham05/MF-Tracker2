@@ -14,11 +14,11 @@ const drawLinePlugin={
     if(chart._ltrDone)return;
     const now=performance.now();
     if(!chart._ltrStart)chart._ltrStart=now;
-    const p=Math.min((now-chart._ltrStart)/900,1);
+    const p=Math.min((now-chart._ltrStart)/500,1);
     if(p>=1){chart._ltrDone=true;return;}
     const{ctx:c2,canvas}=chart;
     c2.save();c2.beginPath();c2.rect(0,0,canvas.width*p,canvas.height);c2.clip();
-    requestAnimationFrame(()=>chart.draw());
+    if(chart.canvas)requestAnimationFrame(()=>chart.draw());
   },
   afterDraw(chart){if(!chart._ltrDone)chart.ctx.restore();}
 };
@@ -39,6 +39,7 @@ export default function PortfolioValueChart({ canvasId, keys, db, defaultTF='3M'
   // Refs for stable access without re-creating buildChart
   const keysRef=useRef(keys);
   const dbRef=useRef(db);
+  const userChangedTFRef=useRef(false);
   useEffect(()=>{keysRef.current=keys;},[keys]);
   useEffect(()=>{dbRef.current=db;},[db]);
 

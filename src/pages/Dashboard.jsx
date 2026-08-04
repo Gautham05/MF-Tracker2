@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useAppStore from '../store/useAppStore.js';
-import { MF_FUNDS, navHistoryCache, getFundLogo } from '../constants/funds.js';
+import { MF_FUNDS, getFundLogo } from '../constants/funds.js';
 import { getMFStats, getDayChange, getDayChangeAll } from '../utils/mfStats.js';
 import { calcXIRR } from '../utils/xirr.js';
 import { calcTaxInfo } from '../utils/taxCalc.js';
@@ -29,26 +29,7 @@ export default function Dashboard() {
   const [chartPage,setChartPage]=useState(0);
   const keys=Object.keys(MF_FUNDS);
 
-  // Pre-load nav history for all funds from db (localStorage) — instant, no network
-  // Pre-load all nav histories then trigger ONE re-render for charts
-  useEffect(()=>{
-    let cancelled=false;
-    async function preload(){
-      // Skip if auto-fetch is running after import (fetchNAV handles everything)
-      if(localStorage.getItem('mft_auto_nav')==='1')return;
-      // Check if any fund is missing from cache (not pre-populated by main.jsx)
-      const missing=keys.filter(k=>!navHistoryCache[k]);
-      if(!missing.length)return; // All already in cache — no render needed
-      for(const k of missing){
-        if(cancelled)break;
-        await loadNavHistory(k);
-      }
-      // ONE state update only if we actually loaded something new
-      if(!cancelled) setHistLoaded(v=>v+1);
-    }
-    preload();
-    return ()=>{cancelled=true;};
-  },[keys.join(',')]);
+
   const hide=v=>amtHidden?'••••':v;
 
   // Totals

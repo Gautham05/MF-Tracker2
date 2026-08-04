@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import useAppStore from '../../store/useAppStore.js';
-import { parseMFData, normalizeFundCategory, buildStandardFullName, MF_FUNDS } from '../../constants/funds.js';
+import { parseMFData, normalizeFundCategory, buildStandardFullName, buildShortName, MF_FUNDS } from '../../constants/funds.js';
 
 const PRESET_COLORS=['#c9a84c','#4a7fcb','#22c55e','#a78bfa','#f97316','#ef4444','#06b6d4','#ec4899','#84cc16','#f59e0b'];
 
@@ -68,11 +68,11 @@ export default function AddFundModal({ onClose, onBack }) {
 
   async function doSearch(q){
     try{
-      const r=await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(q)}`);
+      const r=await fetch(`https://amfi-search.mfnav.workers.dev/search?q=${encodeURIComponent(q)}`);
       const j=await r.json();
-      if(!j||!j.length){setSearchStatus('No results found');setSearchStatusColor('#f97316');setShowResults(false);return;}
-      setSearchStatus(j.length+' results');setSearchStatusColor('#34d399');
-      setResults(j.slice(0,15));setShowResults(true);
+      if(!j?.results?.length){setSearchStatus('No results found');setSearchStatusColor('#f97316');setShowResults(false);return;}
+      setSearchStatus(j.count+' results');setSearchStatusColor('#34d399');
+      setResults(j.results.slice(0,15));setShowResults(true);
     }catch{setSearchStatus('Search failed');setSearchStatusColor('#f87171');}
   }
 
@@ -143,11 +143,7 @@ export default function AddFundModal({ onClose, onBack }) {
       }
     }catch{}
     const fn=buildStandardFullName(selected.name||'');
-    let sn=fn.replace(/\s*-\s*Direct Plan\s*-\s*Growth$/,'').replace(/\s*-\s*Regular Plan\s*-\s*Growth$/,'')
-      .replace(/\s*-\s*Direct Plan\s*-\s*IDCW$/,' IDCW').replace(/\s*-\s*Regular Plan\s*-\s*IDCW$/,' IDCW (Reg)')
-      .replace(/\s*Fund$/,'').replace(/\s+/g,' ').trim();
-    if(/Regular Plan/i.test(fn)&&!/IDCW/i.test(fn))sn+=' (Reg)';
-    if(sn.length>32)sn=sn.slice(0,30)+'\u2026';
+    const sn=buildShortName(fn);
     const fundData={name:sn,fullName:fn,code:selected.code,color:activeColor,ter:parseFloat(ter)||0,category,amcName};
     addFund(k,fundData,navDataEntry,navHistArr);
     setAdding(false);onClose();
@@ -192,7 +188,7 @@ export default function AddFundModal({ onClose, onBack }) {
             {selected
               ?<>
                 <div style={{fontSize:11,color:'#9aaac8',marginBottom:3}}>Selected Fund</div>
-                <div id="af-sel-name" style={{fontSize:13,fontWeight:700,color:'#e0e8ff',marginBottom:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{selected.name}</div>
+                {(()=>{const fn=buildStandardFullName(selected.name||'');return <div id="af-sel-name" style={{fontSize:13,fontWeight:700,color:'#e0e8ff',marginBottom:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={fn}>{fn}</div>;})()}
                 <div id="af-sel-meta" style={{fontSize:11,color:'#7ab8ff'}}>{selected.house}{selected.cat?' · '+selected.cat:''} · Code: {selected.code}</div>
               </>
               :<div style={{fontSize:11,color:'#4a5570',padding:'18px 0',textAlign:'center'}}>Selected Fund</div>
